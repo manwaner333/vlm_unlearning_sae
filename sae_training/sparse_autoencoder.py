@@ -91,8 +91,8 @@ class SparseAutoencoder(HookedRootModule):
         feature_acts = self.hook_hidden_post(torch.nn.functional.relu(hidden_pre))
         
         # 如果进行Unlerning， 需要在此处进行修改
-        # for indx in range(1, 10000):
-        #     feature_acts[...,indx] = 0.2
+        # for indx in [44498, 33126, 5137, 45064, 3520, 32389, 990, 11000, 62578, 31911]:
+        #     feature_acts[...,indx] = feature_acts[...,indx] * -0.1
       
         sae_out = self.hook_sae_out(
             einops.einsum(

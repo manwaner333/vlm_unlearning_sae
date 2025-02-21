@@ -12,6 +12,7 @@ from functools import partial
 from sae_training.utils import LMSparseAutoencoderSessionloader
 from sae_analysis.visualizer import data_fns, html_fns
 from sae_analysis.visualizer.data_fns import get_feature_data, FeatureData
+import io
 
 import os
 import sys
@@ -196,13 +197,97 @@ def get_sae_activations(model_activaitons, sparse_autoencoder):
         
     sae_activations = torch.cat(sae_activations, dim = 0)
     sae_activations = sae_activations.to(sparse_autoencoder.cfg.device)
-    return sae_activations   
+    return sae_activations  
+
+
+def conversation_form(key):
+    conversation = [
+        {
+        "role": "user",
+        "content": [
+            {"type": "text", "text": key},  # "What's in the picture?"
+            {"type": "image"},
+            ],
+        },
+    ]
+    return conversation
+
+
+def get_model_activations(model, inputs, cfg):
+    module_name = cfg.module_name
+    block_layer = cfg.block_layer
+    list_of_hook_locations = [(block_layer, module_name)]
+
+    activations = model.run_with_cache(
+        list_of_hook_locations,
+        **inputs,
+    )[1][(block_layer, module_name)]
     
+    activations = activations[:,-7,:]
+
+    return activations
+
+
+def get_all_model_activations(model, images, conversations, cfg):
+    max_batch_size = cfg.max_batch_size_for_vit_forward_pass
+    number_of_mini_batches = len(images) // max_batch_size
+    remainder = len(images) % max_batch_size
+    sae_batches = []
+    for mini_batch in trange(number_of_mini_batches, desc = "Dashboard: forward pass images through ViT"):
+        image_batch = images[mini_batch*max_batch_size : (mini_batch+1)*max_batch_size]
+        conversation_batch = conversations[mini_batch*max_batch_size : (mini_batch+1)*max_batch_size]
+        # inputs = model.processor(images=image_batch, text = "", return_tensors="pt", padding = True).to(model.model.device)
+        # conversation = [
+        #     {
+        #     "role": "user",
+        #     "content": [
+        #         {"type": "text", "text": "What is shown in this image?"},
+        #         {"type": "image"},
+        #         ],
+        #     },
+        # ]
+        # prompt = model.processor.apply_chat_template(conversation, add_generation_prompt=True)
+        batch_of_prompts = []
+        for ele in conversation_batch:
+            batch_of_prompts.append(model.processor.apply_chat_template(ele, add_generation_prompt=True))
+        
+        inputs = model.processor(images=image_batch, text=batch_of_prompts, padding=True, return_tensors="pt").to(model.model.device)
+        sae_batches.append(get_model_activations(model, inputs, cfg))
+    
+    if remainder>0:
+        image_batch = images[-remainder:]
+        conversation_batch = conversations[-remainder:]
+        # inputs = model.processor(images=image_batch, text = "", return_tensors="pt", padding = True).to(model.model.device)
+        # conversation = [
+        #     {
+        #     "role": "user",
+        #     "content": [
+        #         {"type": "text", "text": "What is shown in this image?"},
+        #         {"type": "image"},
+        #         ],
+        #     },
+        # ]
+        # prompt = model.processor.apply_chat_template(conversation, add_generation_prompt=True)
+        batch_of_prompts = []
+        for ele in conversation_batch:
+            batch_of_prompts.append(model.processor.apply_chat_template(ele, add_generation_prompt=True))
+            
+        inputs = model.processor(images=image_batch, text=batch_of_prompts, padding=True, return_tensors="pt").to(model.model.device)
+        sae_batches.append(get_model_activations(model, inputs, cfg))
+        
+    sae_batches = torch.cat(sae_batches, dim = 0)
+    sae_batches = sae_batches.to(cfg.device)
+    return sae_batches
+
+
+  
 original_model = False
-sae_model = True
+sae_model = False
 neuron_alighment = False
 scatter_plots = False
 sae_sparsity = False
+focus_features = False
+focus_images = False
 
 
 ### specific case study---sparse autoencoder model
@@ -212,7 +297,14 @@ if sae_model:
     # sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/a290660cfffb2fa669e809a8b52298dc901d2069/model.pt"
     # sae_path = "checkpoints/gsy8f8zy/final_sparse_autoencoder_llava-hf/llava-1.5-7b-hf_-2_resid_131072.pt"
     # sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/99d8212c2b7e2d9661e1de1dab3b64b3dbb4f9b0/100864_sae_model.pt"
-    sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/257fad408af4e96fb532887018dd8520cacc0a9f/302592_sae_model.pt"
+    # sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/257fad408af4e96fb532887018dd8520cacc0a9f/302592_sae_model.pt"
+    # sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/3c468d5fd49342de8f38dcf7a4eecaeb4e8b6ec6/100864_sae_image_model.pt"
+    # sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/85e02735659e04a6e74651b74784fd1d19168b18/100864_sae_image_model_activations_7.pt"
+    # sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/91251c64c0a50806a46a97e16f4b77ac65e37a04/201728_sae_image_model_activations_7.pt"
+    # sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/11e422e9a6b886457af1f53b095fdbc401d68233/302592_sae_image_model_activations_7.pt"
+    # sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/9ae094c2e23727d1c77d05d46f419d2b1e2e6aef/605184_sae_image_model_activations_7.pt"
+    # sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/aa9c6eb62ded51020e8c5c34182602af353d9d77/1210112_sae_image_model_activations_7.pt"
+    sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/3cab4c8243f1f0954b74f45f3a7ba64ffaba073b/1714176_sae_image_model_activations_7.pt"
     loaded_object = torch.load(sae_path)
     cfg = loaded_object['cfg']
     state_dict = loaded_object['state_dict']
@@ -236,7 +328,7 @@ if sae_model:
         {
         "role": "user",
         "content": [
-            {"type": "text", "text": "What are these?"},
+            {"type": "text", "text": "Please describe this picture."},   # "What are these?"
             {"type": "image"},
             ],
         },
@@ -244,7 +336,7 @@ if sae_model:
     prompt = model.processor.apply_chat_template(conversation, add_generation_prompt=True)
     model_inputs = model.processor(images=raw_image, text=prompt, return_tensors='pt').to(cfg.device, torch.float16)
     prompt_tokens = model_inputs.input_ids
-    answer = "These are cat."
+    # answer = "These are cat."
     # model_inputs = model.processor(text=answer, return_tensors='pt').to(0, torch.float16)
     # answer_tokens = model_inputs.input_ids
     input_ids = model_inputs.input_ids
@@ -257,26 +349,30 @@ if sae_model:
     # answer_str_tokens = tokenizer.convert_ids_to_tokens(answer_tokens[0])
 
         
-    max_token = 20
+    max_token = 1024
     generated_ids = input_ids.clone()
     
     activation_cache = []
-    def sae_hook1(activations):
-        global activation_cache
-        print("before:", activations.shape)
-        activation_cache.append(activations[:, -2, :].clone().detach())
-        activations[:,-2,:] = sparse_autoencoder(activations[:,-2,:])[0]
-        print("After:", activations.shape)
-        return (activations,)
+    # def sae_hook1(activations):
+    #     global activation_cache
+    #     print("before:", activations.shape)
+    #     activation_cache.append(activations[:, -2, :].clone().detach())
+    #     activations[:,-2,:] = sparse_autoencoder(activations[:,-2,:])[0]
+    #     print("After:", activations.shape)
+    #     return (activations,)
     
-    def zero_ablation(activations):
-        activations[:,-1,:] = torch.zeros_like(activations[:,-1,:]).to(activations.device)
-        return (activations,)
+    # def zero_ablation(activations):
+    #     activations[:,-1,:] = torch.zeros_like(activations[:,-1,:]).to(activations.device)
+    #     return (activations,)
     
     def sae_hook(activations):
         global activation_cache
-        activation_cache.append(activations[:, -2, :].clone().detach())
-        activations[:,-2,:] = activations[:,-2,:]   
+        # LLMs
+        # activation_cache.append(activations[:, -1, :].clone().detach())
+        # activations[:,-1,:] = activations[:,-1,:] 
+        # ViTs
+        # activation_cache.append(activations[:, -1, :].clone().detach())
+        activations[:,0:576,:] = sparse_autoencoder(activations[:,0:576,:])[0]    
         return (activations,)
     
     # def sae_hook1(activations, original_output=None):
@@ -293,8 +389,8 @@ if sae_model:
     
     # n_forward_passes_since_fired = torch.zeros(sparse_autoencoder.cfg.d_sae, device=sparse_autoencoder.cfg.device)
     # ghost_grad_neuron_mask = (n_forward_passes_since_fired > sparse_autoencoder.cfg.dead_feature_window).bool()
-    sae_hooks = [Hook(sparse_autoencoder.cfg.block_layer, sparse_autoencoder.cfg.module_name, sae_hook1, return_module_output=True)]
-    zero_ablation_hooks = [Hook(sparse_autoencoder.cfg.block_layer, sparse_autoencoder.cfg.module_name, zero_ablation, return_module_output=True)] 
+    sae_hooks = [Hook(sparse_autoencoder.cfg.block_layer, sparse_autoencoder.cfg.module_name, sae_hook, return_module_output=True)]
+    # zero_ablation_hooks = [Hook(sparse_autoencoder.cfg.block_layer, sparse_autoencoder.cfg.module_name, zero_ablation, return_module_output=True)] 
     # sae_hooks = [Hook(sparse_autoencoder.cfg.block_layer, sparse_autoencoder.cfg.module_name, lambda activations, original_output: sae_hook1(activations, original_output),
     # return_module_output=True)]
 
@@ -323,21 +419,21 @@ if sae_model:
     print(output_texts)
     
     
-    number_of_top_features = 5
-    activations = torch.cat(activation_cache, dim = 0)
-    sae_activations = get_sae_activations(activations, sparse_autoencoder)
-    values, indices = topk(sae_activations, k = number_of_top_features, dim = 1)
+    # number_of_top_features = 5
+    # activations = torch.cat(activation_cache, dim = 0)
+    # sae_activations = get_sae_activations(activations, sparse_autoencoder)
+    # values, indices = topk(sae_activations, k = number_of_top_features, dim = 1)
     
-    token_number = 0
-    for row1, row2 in zip(indices, values):
-        token = model.processor.tokenizer.decode(new_tokens[token_number][0])
-        print(f"Token:{token}")
-        print("Features Indices:")
-        print(row1)
-        print("Features Values:")
-        print(row2)
-        token_number += 1
-    qingli = 3
+    # token_number = 0
+    # for row1, row2 in zip(indices, values):
+    #     token = model.processor.tokenizer.decode(new_tokens[token_number][0])
+    #     print(f"Token:{token}")
+    #     print("Features Indices:")
+    #     print(row1)
+    #     print("Features Values:")
+    #     print(row2)
+    #     token_number += 1
+    # qingli = 3
     
 
 
@@ -353,11 +449,11 @@ if original_model:
 
     processor = AutoProcessor.from_pretrained(model_id)
 
-    image_file = "http://images.cocodataset.org/val2017/000000039769.jpg"
-    raw_image = Image.open(requests.get(image_file, stream=True).raw)
+    # image_file = "http://images.cocodataset.org/val2017/000000039769.jpg"
+    # raw_image = Image.open(requests.get(image_file, stream=True).raw)
     
-    # image_file = "image1.jpg"
-    # raw_image = Image.open(image_file)
+    image_file = "image1.jpg"
+    raw_image = Image.open(image_file)
     conversation = [
         {
 
@@ -453,7 +549,7 @@ if neuron_alighment:
 
 if scatter_plots:
     ### 1
-    expansion_factor = 32
+    expansion_factor = 64
     directory = "dashboard"  # "dashboard" 
     sparsity = torch.load(f'{directory}/sae_sparsity.pt').to('cpu') # size [n]
     max_activating_image_indices = torch.load(f'{directory}/max_activating_image_indices.pt').to('cpu').to(torch.int32)
@@ -469,7 +565,7 @@ if scatter_plots:
         xaxis_title="Log 10 sparsity",
         yaxis_title="Count"
     )
-    # fig.write_image("aaa111.png")
+    fig.write_image("aaa111.png")
     
     ### 2
     number_of_neurons = max_activating_image_values.size()[0]
@@ -524,7 +620,8 @@ if scatter_plots:
 
 
     ### 4
-    sae_path = f"checkpoints/0ns2guf8/final_sparse_autoencoder_llava-hf/llava-1.5-7b-hf_-2_resid_131072.pt"
+    # sae_path = f"checkpoints/0ns2guf8/final_sparse_autoencoder_llava-hf/llava-1.5-7b-hf_-2_resid_131072.pt"
+    sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/11e422e9a6b886457af1f53b095fdbc401d68233/302592_sae_image_model_activations_7.pt"
     loaded_object = torch.load(sae_path)
     cfg = loaded_object['cfg']
     state_dict = loaded_object['state_dict']
@@ -556,7 +653,7 @@ if scatter_plots:
         list_of_hook_locations,
         **inputs,
     )[1][(block_layer, module_name)]
-    model_activations = model_activations[:,-1,:]
+    model_activations = model_activations[:,-7,:]
     _, feature_acts, _, _, _, _ = sparse_autoencoder(model_activations)
     feature_acts = feature_acts.to('cpu')
     print(f'Most common image has index: {most_common_index}')
@@ -567,8 +664,158 @@ if scatter_plots:
         
 
 
+if focus_features:
+
+    seed = 1
+    # sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/11e422e9a6b886457af1f53b095fdbc401d68233/302592_sae_image_model_activations_7.pt"
+    # sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/9ae094c2e23727d1c77d05d46f419d2b1e2e6aef/605184_sae_image_model_activations_7.pt"
+    # sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/aa9c6eb62ded51020e8c5c34182602af353d9d77/1210112_sae_image_model_activations_7.pt"
+    sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/3cab4c8243f1f0954b74f45f3a7ba64ffaba073b/1714176_sae_image_model_activations_7.pt"
+    loaded_object = torch.load(sae_path)
+    cfg = loaded_object['cfg']
+    state_dict = loaded_object['state_dict']
+    sparse_autoencoder = SparseAutoencoder(cfg)
+    sparse_autoencoder.load_state_dict(state_dict)
+    sparse_autoencoder.eval()
+
+    dataset = load_dataset(sparse_autoencoder.cfg.dataset_path, split="train")
+    image_label = 'label' 
+    image_key = 'image'
+    dataset = dataset.shuffle(seed = seed)
+    directory = "dashboard_1714176"
+        
+    max_activating_image_indices = torch.load(f'{directory}/max_activating_image_indices.pt').to('cpu').to(torch.int32)
+    max_activating_image_values = torch.load(f'{directory}/max_activating_image_values.pt').to('cpu') 
+
+    # 找出激活着比较高的特征， 以及这些特征对应的比较强的图片
+    num_neurons = 20
+    row_sums = max_activating_image_values.sum(dim=1, keepdim=True)
+    top20_indices = torch.topk(row_sums.squeeze(), 20).indices
+    print(top20_indices)
+
+    # neuron_list = [43208, 17533,  2950, 34679, 49570,  194, 35429, 28796, 42148,  7401, 14129, 63464, 24866, 19612,  8645, 13087, 17839, 52874, 45455,  6295] 
+    # neuron_list = [43208, 17533,  2950, 34679, 49570,  194, 35429, 28796, 42148]   
+    # neuron_list = [18048, 15239, 40921, 16830, 20003,  9512,  9537, 18422,   837, 10637, 17803,  4624, 40132, 34198, 18922, 16183, 56256, 52172, 11539, 58812]
+    # neuron_list = [18048, 15239, 40921, 16830, 20003,  9512,  9537, 18422,   837]
+    # neuron_list = [18048, 40921, 15239,  9512, 15756, 12468, 16830,  7802, 14260, 60111, 9537, 56821, 10506,  1197, 20003, 52355, 24553, 15821, 50541, 11382]
+    neuron_list = [18048, 40921, 15239,  9512, 15756, 12468, 16830,  7802, 14260, 60111, 9537]
+
+    assert max_activating_image_values.size() == max_activating_image_indices.size(), "size of max activating image indices doesn't match the size of max activing values."
+    number_of_neurons, number_of_max_activating_examples = max_activating_image_values.size()
+    # for neuron in trange(number_of_neurons):
+    for neuron in neuron_list:
+        neuron_dead = True
+        for max_activating_image in range(number_of_max_activating_examples):
+            if max_activating_image_values[neuron, max_activating_image].item()>0:
+                if neuron_dead:
+                    if not os.path.exists(f"{directory}/{neuron}"):
+                        os.makedirs(f"{directory}/{neuron}")
+                    neuron_dead = False
+                image = dataset[int(max_activating_image_indices[neuron, max_activating_image].item())][image_key]
+                image.save(f"{directory}/{neuron}/{max_activating_image}_{int(max_activating_image_indices[neuron, max_activating_image].item())}_{max_activating_image_values[neuron, max_activating_image].item():.4g}.png", "PNG")
+                
+                
 
 
 
 
 
+
+
+
+sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/3cab4c8243f1f0954b74f45f3a7ba64ffaba073b/1714176_sae_image_model_activations_7.pt"
+loaded_object = torch.load(sae_path)
+cfg = loaded_object['cfg']
+state_dict = loaded_object['state_dict']
+
+sparse_autoencoder = SparseAutoencoder(cfg)
+sparse_autoencoder.load_state_dict(state_dict)
+sparse_autoencoder.eval()
+
+loader = ViTSparseAutoencoderSessionloader(cfg)
+
+model = loader.get_model(cfg.model_name)
+model.to(cfg.device)
+
+label = 200
+
+torch.cuda.empty_cache()
+dataset_all = load_dataset(sparse_autoencoder.cfg.dataset_path, split="train")
+dataset_5000 = dataset_all.select(range(255000, 265000))
+dataset = dataset_5000.filter(lambda example: example['label'] == label)
+print(f"Total data quantity: {len(dataset)}")
+
+
+if sparse_autoencoder.cfg.dataset_path=="cifar100": # Need to put this in the cfg
+    image_key = 'img'
+else:
+    image_key = 'image'
+
+image_label = 'label' 
+dataset = dataset.shuffle(seed = seed)
+directory = "dashboard_1714176"
+
+
+first_image = dataset[3][image_key]
+
+if isinstance(first_image, Image.Image):
+    first_image.save("first_image.png")  
+    print("Image saved as first_image.png")
+elif isinstance(first_image, dict) and "bytes" in first_image:
+    img = Image.open(io.BytesIO(first_image["bytes"]))
+    img.save("first_image.png")
+    print("Image saved as first_image.png")
+else:
+    print("Unsupported image format:", type(first_image))
+
+
+
+
+
+
+# number_of_images_processed = 0
+# max_number_of_images_per_iteration = len(dataset)
+# while number_of_images_processed < len(dataset):
+#     torch.cuda.empty_cache()
+#     try:
+#         images = dataset[number_of_images_processed:number_of_images_processed + max_number_of_images_per_iteration][image_key]
+#         labels = dataset[number_of_images_processed:number_of_images_processed + max_number_of_images_per_iteration][image_label]
+#         conversations = [conversation_form(str(ele)) for ele in labels]
+#     except StopIteration:
+#         print('All of the images in the dataset have been processed!')
+#         break
+    
+#     model_activations = get_all_model_activations(model, images, conversations, sparse_autoencoder.cfg) # tensor of size [batch, d_resid]
+#     sae_activations = get_sae_activations(model_activations, sparse_autoencoder).transpose(0,1) # tensor of size [feature_idx, batch]
+#     torch.save(sae_activations, f'{directory}/sae_activations_{label}.pt')
+#     number_of_images_processed += max_number_of_images_per_iteration
+
+
+
+
+# directory = "dashboard_1714176"
+     
+# sae_activations_0 = torch.load(f'{directory}/sae_activations_0.pt').to('cpu')
+# sae_activations_200 = torch.load(f'{directory}/sae_activations_200.pt').to('cpu') 
+
+# sum_0 = sae_activations_0.mean(dim=1, keepdim=True)
+# sum_200 = sae_activations_200.mean(dim=1, keepdim=True)
+
+# epsilon = torch.finfo(sum_0.dtype).eps
+# total_sum_0 = sum_0.sum() + epsilon 
+# total_sum_200 = sum_200.sum() + epsilon
+
+# ratio_0 = sum_0 / total_sum_0 
+# ratio_200 = sum_200 / total_sum_200 
+
+
+# # diff_ratio = ratio_0 - ratio_200
+# diff_ratio = ratio_200 - ratio_0
+# values, indices = torch.topk(diff_ratio, 10, dim=0)
+
+# print("value of epsion:", epsilon)
+# print("total_sum:", total_sum_0)
+# print("a shape:", sum_0.shape)        
+# print("ratio shape:", ratio_0.shape)
+# print("Top 10 indices:", indices.squeeze().tolist())
+# print("Top 10 values:", values.squeeze().tolist())

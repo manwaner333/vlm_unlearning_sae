@@ -78,7 +78,8 @@ class new_sae(nn.Module):
 target_indices = [380,886,1773,2297,4482,11059,22604,26958,30387]
 
 # 774, 10057, 25081, 14061, 2681
-sae_path = "checkpoints/pcy601zk/final_sparse_autoencoder_openai/clip-vit-large-patch14_-2_resid_65536.pt"
+# sae_path = "checkpoints/pcy601zk/final_sparse_autoencoder_openai/clip-vit-large-patch14_-2_resid_65536.pt"
+sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/11e422e9a6b886457af1f53b095fdbc401d68233/302592_sae_image_model_activations_7.pt"
 loaded_object = torch.load(sae_path)
 cfg = loaded_object['cfg']
 state_dict = loaded_object['state_dict']

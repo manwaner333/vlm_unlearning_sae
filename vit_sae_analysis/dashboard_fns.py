@@ -41,7 +41,7 @@ def conversation_form(key):
         {
         "role": "user",
         "content": [
-            {"type": "text", "text": "What's in the picture?"},
+            {"type": "text", "text": key},  # "What's in the picture?"
             {"type": "image"},
             ],
         },
@@ -111,7 +111,7 @@ def get_model_activations(model, inputs, cfg):
         **inputs,
     )[1][(block_layer, module_name)]
     
-    activations = activations[:,-1,:]
+    activations = activations[:,-7,:]
 
     return activations
 
@@ -251,7 +251,7 @@ def get_feature_data(
     
     dataset = load_dataset(sparse_autoencoder.cfg.dataset_path, split="train")
     
-    dataset = dataset.select(range(1000))
+    # dataset = dataset.select(range(1000))
     
     # data_path = sparse_autoencoder.cfg.dataset_path
     # try:
@@ -274,12 +274,12 @@ def get_feature_data(
     
     # dataset = Dataset.from_dict(dataset_dict, features=features)
     
-    # if sparse_autoencoder.cfg.dataset_path=="cifar100": # Need to put this in the cfg
-    #     image_key = 'img'
-    # else:
-    #     image_key = 'image'
+    if sparse_autoencoder.cfg.dataset_path=="cifar100": # Need to put this in the cfg
+        image_key = 'img'
+    else:
+        image_key = 'image'
     
-    image_key = 'image'
+    # image_key = 'image'
     image_label = 'label' 
     dataset = dataset.shuffle(seed = seed)
     directory = "dashboard"
@@ -298,7 +298,7 @@ def get_feature_data(
             try:
                 images = dataset[number_of_images_processed:number_of_images_processed + max_number_of_images_per_iteration][image_key]
                 labels = dataset[number_of_images_processed:number_of_images_processed + max_number_of_images_per_iteration][image_label]
-                conversations = [conversation_form(ele) for ele in labels]
+                conversations = [conversation_form(str(ele)) for ele in labels]
             except StopIteration:
                 print('All of the images in the dataset have been processed!')
                 break
@@ -339,4 +339,4 @@ def get_feature_data(
         torch.save(sae_mean_acts, f'{directory}/sae_mean_acts.pt')
         # Should also save label information tensor here!!!
         
-    save_highest_activating_images(max_activating_image_indices[:10,:10], max_activating_image_values[:10,:10], directory, dataset, image_key)  # 1000
+    save_highest_activating_images(max_activating_image_indices[:10,:3], max_activating_image_values[:10,:3], directory, dataset, image_key)  # 1000

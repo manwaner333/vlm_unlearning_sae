@@ -61,16 +61,16 @@ cfg = ViTSAERunnerConfig(
     class_token = True,
     image_width = 224,
     image_height = 224,
-    model_name = "llava-hf/llava-v1.6-vicuna-7b-hf",  # "openai/clip-vit-large-patch14",
+    model_name = "llava-hf/llava-1.5-7b-hf",  # "openai/clip-vit-large-patch14",
     module_name = "resid",
     block_layer = -2,
-    dataset_path = "./dataset/select.json",   # "evanarlian/imagenet_1k_resized_256",
+    dataset_path = "evanarlian/imagenet_1k_resized_256",  # "./dataset/select.json",   # "evanarlian/imagenet_1k_resized_256",
     use_cached_activations = False,
     cached_activations_path = None,
-    d_in = 4096,  # 1024,
+    d_in = 1024, #  4096,  # 1024,
     
     # SAE Parameters
-    expansion_factor = 3,  # 64,
+    expansion_factor = 64,  # 64,
     b_dec_init_method = "mean",
     
     # Training Parameters
@@ -102,7 +102,11 @@ cfg = ViTSAERunnerConfig(
     checkpoint_path = "checkpoints",
     dtype = torch.float32,
     
-    from_pretrained_path = 'checkpoints/0ns2guf8/final_sparse_autoencoder_llava-hf/llava-1.5-7b-hf_-2_resid_131072.pt'
+    # Activation Store Parameters # 自己添加的
+    max_batch_size_for_vit_forward_pass = 10,
+    
+    # from_pretrained_path = 'checkpoints/0ns2guf8/final_sparse_autoencoder_llava-hf/llava-1.5-7b-hf_-2_resid_131072.pt'
+    from_pretrained_path = 'checkpoints/models--jiahuimbzuai--sae_64/snapshots/3c468d5fd49342de8f38dcf7a4eecaeb4e8b6ec6/100864_sae_image_model.pt'
     )
 
 # torch.cuda.empty_cache()
@@ -125,7 +129,8 @@ def zero_ablation(activations):
   return (activations,) # activations of size [batch, token, dimension]
     
 def sae_hook(activations):
-    activations[:,-1,:] =  activations[:,-1,:]*0.5  # sparse_autoencoder(activations[:,-1,:])[0]    #   activations[:,0,:] = sparse_autoencoder(activations[:,0,:])[0]
+    # activations[:,-1,:] =  activations[:,-1,:]*0.5  # sparse_autoencoder(activations[:,-1,:])[0]    #   activations[:,0,:] = sparse_autoencoder(activations[:,0,:])[0]
+    activations[:,0:576,:] = activations[:,0:576,:]
     return (activations,)
 
 def logits_to_next_str(logits, model = model):
