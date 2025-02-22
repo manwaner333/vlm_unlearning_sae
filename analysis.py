@@ -282,7 +282,7 @@ def get_all_model_activations(model, images, conversations, cfg):
 
   
 original_model = False
-sae_model = False
+sae_model = True
 neuron_alighment = False
 scatter_plots = False
 sae_sparsity = False
@@ -304,7 +304,9 @@ if sae_model:
     # sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/11e422e9a6b886457af1f53b095fdbc401d68233/302592_sae_image_model_activations_7.pt"
     # sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/9ae094c2e23727d1c77d05d46f419d2b1e2e6aef/605184_sae_image_model_activations_7.pt"
     # sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/aa9c6eb62ded51020e8c5c34182602af353d9d77/1210112_sae_image_model_activations_7.pt"
-    sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/3cab4c8243f1f0954b74f45f3a7ba64ffaba073b/1714176_sae_image_model_activations_7.pt"
+    # sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/3cab4c8243f1f0954b74f45f3a7ba64ffaba073b/1714176_sae_image_model_activations_7.pt"
+    sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/e44861c762f4a32084ac448f31cd7264800610df/2621440_sae_image_model_activations_7.pt"
+    
     loaded_object = torch.load(sae_path)
     cfg = loaded_object['cfg']
     state_dict = loaded_object['state_dict']
@@ -321,7 +323,7 @@ if sae_model:
     # image_file = "http://images.cocodataset.org/val2017/000000039769.jpg"
     # raw_image = Image.open(requests.get(image_file, stream=True).raw)
     
-    image_file = "image1.jpg"
+    image_file = "image2.png"
     raw_image = Image.open(image_file)
     
     conversation = [
@@ -452,14 +454,14 @@ if original_model:
     # image_file = "http://images.cocodataset.org/val2017/000000039769.jpg"
     # raw_image = Image.open(requests.get(image_file, stream=True).raw)
     
-    image_file = "image1.jpg"
+    image_file = "image2.png"
     raw_image = Image.open(image_file)
     conversation = [
         {
 
         "role": "user",
         "content": [
-            {"type": "text", "text": "What are these?"},
+            {"type": "text", "text": "Please describe this picture."},  # "What are these?"
             {"type": "image"},
             ],
         },
@@ -467,7 +469,7 @@ if original_model:
 
     prompt = processor.apply_chat_template(conversation, add_generation_prompt=True)
     model_inputs = processor(images=raw_image, text=prompt, return_tensors='pt').to(device, torch.float16)
-    output = model.generate(**model_inputs, max_new_tokens=50, do_sample=False)
+    output = model.generate(**model_inputs, max_new_tokens=1024, do_sample=False)
 
     print(processor.decode(output[0][2:], skip_special_tokens=True))
 
@@ -718,104 +720,99 @@ if focus_features:
 
 
 
-
-
-
-
-
-sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/3cab4c8243f1f0954b74f45f3a7ba64ffaba073b/1714176_sae_image_model_activations_7.pt"
-loaded_object = torch.load(sae_path)
-cfg = loaded_object['cfg']
-state_dict = loaded_object['state_dict']
-
-sparse_autoencoder = SparseAutoencoder(cfg)
-sparse_autoencoder.load_state_dict(state_dict)
-sparse_autoencoder.eval()
-
-loader = ViTSparseAutoencoderSessionloader(cfg)
-
-model = loader.get_model(cfg.model_name)
-model.to(cfg.device)
-
-label = 200
-
-torch.cuda.empty_cache()
-dataset_all = load_dataset(sparse_autoencoder.cfg.dataset_path, split="train")
-dataset_5000 = dataset_all.select(range(255000, 265000))
-dataset = dataset_5000.filter(lambda example: example['label'] == label)
-print(f"Total data quantity: {len(dataset)}")
-
-
-if sparse_autoencoder.cfg.dataset_path=="cifar100": # Need to put this in the cfg
-    image_key = 'img'
-else:
-    image_key = 'image'
-
-image_label = 'label' 
-dataset = dataset.shuffle(seed = seed)
-directory = "dashboard_1714176"
-
-
-first_image = dataset[3][image_key]
-
-if isinstance(first_image, Image.Image):
-    first_image.save("first_image.png")  
-    print("Image saved as first_image.png")
-elif isinstance(first_image, dict) and "bytes" in first_image:
-    img = Image.open(io.BytesIO(first_image["bytes"]))
-    img.save("first_image.png")
-    print("Image saved as first_image.png")
-else:
-    print("Unsupported image format:", type(first_image))
-
-
-
-
-
-
-# number_of_images_processed = 0
-# max_number_of_images_per_iteration = len(dataset)
-# while number_of_images_processed < len(dataset):
-#     torch.cuda.empty_cache()
-#     try:
-#         images = dataset[number_of_images_processed:number_of_images_processed + max_number_of_images_per_iteration][image_key]
-#         labels = dataset[number_of_images_processed:number_of_images_processed + max_number_of_images_per_iteration][image_label]
-#         conversations = [conversation_form(str(ele)) for ele in labels]
-#     except StopIteration:
-#         print('All of the images in the dataset have been processed!')
-#         break
+if focus_images:
     
-#     model_activations = get_all_model_activations(model, images, conversations, sparse_autoencoder.cfg) # tensor of size [batch, d_resid]
-#     sae_activations = get_sae_activations(model_activations, sparse_autoencoder).transpose(0,1) # tensor of size [feature_idx, batch]
-#     torch.save(sae_activations, f'{directory}/sae_activations_{label}.pt')
-#     number_of_images_processed += max_number_of_images_per_iteration
+    # sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/e44861c762f4a32084ac448f31cd7264800610df/2621440_sae_image_model_activations_7.pt"
+    # loaded_object = torch.load(sae_path)
+    # cfg = loaded_object['cfg']
+    # state_dict = loaded_object['state_dict']
+
+    # sparse_autoencoder = SparseAutoencoder(cfg)
+    # sparse_autoencoder.load_state_dict(state_dict)
+    # sparse_autoencoder.eval()
+
+    # loader = ViTSparseAutoencoderSessionloader(cfg)
+
+    # model = loader.get_model(cfg.model_name)
+    # model.to(cfg.device)
+
+    # torch.cuda.empty_cache()
+    # dataset_all = load_dataset(sparse_autoencoder.cfg.dataset_path, split="train")
+    # label = 0
+    # dataset_5000 = dataset_all.select(range(0, 5000))
+    # # label = 200   # dog
+    # # dataset_5000 = dataset_all.select(range(255000, 265000))
+    # dataset = dataset_5000.filter(lambda example: example['label'] == label)
+    # print(f"Total data quantity: {len(dataset)}")
+
+
+    # if sparse_autoencoder.cfg.dataset_path=="cifar100": # Need to put this in the cfg
+    #     image_key = 'img'
+    # else:
+    #     image_key = 'image'
+
+    # image_label = 'label' 
+    # dataset = dataset.shuffle(seed = seed)
+    # directory = "dashboard_2621440"
+
+
+    # # 保存某张相关图片
+    # # first_image = dataset[3][image_key]
+    # # if isinstance(first_image, Image.Image):
+    # #     first_image.save("first_image.png")  
+    # #     print("Image saved as first_image.png")
+    # # elif isinstance(first_image, dict) and "bytes" in first_image:
+    # #     img = Image.open(io.BytesIO(first_image["bytes"]))
+    # #     img.save("first_image.png")
+    # #     print("Image saved as first_image.png")
+    # # else:
+    # #     print("Unsupported image format:", type(first_image))
+
+
+
+    # number_of_images_processed = 0
+    # max_number_of_images_per_iteration = len(dataset)
+    # while number_of_images_processed < len(dataset):
+    #     torch.cuda.empty_cache()
+    #     try:
+    #         images = dataset[number_of_images_processed:number_of_images_processed + max_number_of_images_per_iteration][image_key]
+    #         labels = dataset[number_of_images_processed:number_of_images_processed + max_number_of_images_per_iteration][image_label]
+    #         conversations = [conversation_form(str(ele)) for ele in labels]
+    #     except StopIteration:
+    #         print('All of the images in the dataset have been processed!')
+    #         break
+        
+    #     model_activations = get_all_model_activations(model, images, conversations, sparse_autoencoder.cfg) 
+    #     sae_activations = get_sae_activations(model_activations, sparse_autoencoder).transpose(0,1) 
+    #     torch.save(sae_activations, f'{directory}/sae_activations_{label}.pt')
+    #     number_of_images_processed += max_number_of_images_per_iteration
 
 
 
 
-# directory = "dashboard_1714176"
-     
-# sae_activations_0 = torch.load(f'{directory}/sae_activations_0.pt').to('cpu')
-# sae_activations_200 = torch.load(f'{directory}/sae_activations_200.pt').to('cpu') 
+    directory = "dashboard_2621440"
+        
+    sae_activations_0 = torch.load(f'{directory}/sae_activations_fish.pt').to('cpu')
+    sae_activations_200 = torch.load(f'{directory}/sae_activations_dog.pt').to('cpu') 
 
-# sum_0 = sae_activations_0.mean(dim=1, keepdim=True)
-# sum_200 = sae_activations_200.mean(dim=1, keepdim=True)
+    sum_0 = sae_activations_0.mean(dim=1, keepdim=True)
+    sum_200 = sae_activations_200.mean(dim=1, keepdim=True)
 
-# epsilon = torch.finfo(sum_0.dtype).eps
-# total_sum_0 = sum_0.sum() + epsilon 
-# total_sum_200 = sum_200.sum() + epsilon
+    epsilon = torch.finfo(sum_0.dtype).eps
+    total_sum_0 = sum_0.sum() + epsilon 
+    total_sum_200 = sum_200.sum() + epsilon
 
-# ratio_0 = sum_0 / total_sum_0 
-# ratio_200 = sum_200 / total_sum_200 
+    ratio_0 = sum_0 / total_sum_0 
+    ratio_200 = sum_200 / total_sum_200 
 
 
-# # diff_ratio = ratio_0 - ratio_200
-# diff_ratio = ratio_200 - ratio_0
-# values, indices = torch.topk(diff_ratio, 10, dim=0)
+    # diff_ratio = ratio_0 - ratio_200
+    diff_ratio = ratio_200 - ratio_0
+    values, indices = torch.topk(diff_ratio, 10, dim=0)
 
-# print("value of epsion:", epsilon)
-# print("total_sum:", total_sum_0)
-# print("a shape:", sum_0.shape)        
-# print("ratio shape:", ratio_0.shape)
-# print("Top 10 indices:", indices.squeeze().tolist())
-# print("Top 10 values:", values.squeeze().tolist())
+    print("value of epsion:", epsilon)
+    print("total_sum:", total_sum_0)
+    print("a shape:", sum_0.shape)        
+    print("ratio shape:", ratio_0.shape)
+    print("Top 10 indices:", indices.squeeze().tolist())
+    print("Top 10 values:", values.squeeze().tolist())

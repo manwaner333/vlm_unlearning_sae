@@ -189,3 +189,7 @@ feature_dashboards/
 dataset/
 *.png
 *.jpg
+
+dashboard_1210112/*
+dashboard_1714176/*
+dashboard_302592/*

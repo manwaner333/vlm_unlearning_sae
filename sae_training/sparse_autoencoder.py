@@ -73,7 +73,7 @@ class SparseAutoencoder(HookedRootModule):
 
         self.setup()  # Required for `HookedRootModule`s
 
-    def forward(self, x, dead_neuron_mask = None):
+    def forward(self, x, label = None, dead_neuron_mask = None):  # 修改了此处
         # move x to correct dtype
         x = x.to(self.dtype)
         sae_in = self.hook_sae_in(
@@ -90,9 +90,20 @@ class SparseAutoencoder(HookedRootModule):
         )
         feature_acts = self.hook_hidden_post(torch.nn.functional.relu(hidden_pre))
         
+        if label is not None:
+            selected_features = torch.load(f'dashboard_2621440/feature_indices/feature_indices_{label}.pt').to(self.device)
+            
+            feature_acts[...,selected_features] = feature_acts[...,selected_features] * (-0.1)
+            
+            # for index in selected_features:
+            #     feature_acts[...,index] = feature_acts[...,index] * (-0.5)
+                
+        
         # 如果进行Unlerning， 需要在此处进行修改
         # for indx in [44498, 33126, 5137, 45064, 3520, 32389, 990, 11000, 62578, 31911]:
-        #     feature_acts[...,indx] = feature_acts[...,indx] * -0.1
+        # for indx in [18048, 45787, 7029, 60239, 11297, 15239, 40921, 60026, 2939, 48811]:
+        # for indx in [45787, 18048, 15239, 7029, 60239, 11297, 48811, 40921, 60026, 37171]:
+        #     feature_acts[...,indx] = feature_acts[...,indx] *  -0.3  # -0.5       #  -0.1
       
         sae_out = self.hook_sae_out(
             einops.einsum(

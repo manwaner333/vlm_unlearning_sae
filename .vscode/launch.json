@@ -17,22 +17,22 @@
 //     ]
 // }
 
-{
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Torchrun: Debug finetune.py",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/training_sae_on_ViT.py",  
-            "console": "integratedTerminal",
-            "env": {
-                "MASTER_ADDR": "127.0.0.1",
-                "MASTER_PORT": "41333"
-            },
-        }
-    ]
-}
+// {
+//     "version": "0.2.0",
+//     "configurations": [
+//         {
+//             "name": "Torchrun: Debug finetune.py",
+//             "type": "debugpy",
+//             "request": "launch",
+//             "program": "${workspaceFolder}/training_sae_on_ViT_test.py",  
+//             "console": "integratedTerminal",
+//             "env": {
+//                 "MASTER_ADDR": "127.0.0.1",
+//                 "MASTER_PORT": "41333"
+//             },
+//         }
+//     ]
+// }
 
 
 // {
@@ -51,6 +51,24 @@
 //         }
 //     ]
 // }
+
+
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Torchrun: Debug finetune.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/experiment.py",  
+            "console": "integratedTerminal",
+            "env": {
+                "MASTER_ADDR": "127.0.0.1",
+                "MASTER_PORT": "41333"
+            },
+        }
+    ]
+}
 
 
 // {

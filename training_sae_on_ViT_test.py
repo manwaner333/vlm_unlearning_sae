@@ -42,11 +42,11 @@ cfg = ViTSAERunnerConfig(
     image_height = 224,
     model_name = "llava-1.5-7b-hf",   # "llava-hf/llava-v1.6-vicuna-7b-hf",  # "openai/clip-vit-large-patch14",
     module_name = "resid",
-    block_layer = 10, # -2
+    block_layer = -2, # -2
     dataset_path = "evanarlian/imagenet_1k_resized_256",   # "./dataset/full.json",   # "evanarlian/imagenet_1k_resized_256",  full.json
     use_cached_activations = False,
     cached_activations_path = None,
-    d_in = 4096,  # 1024,
+    d_in = 1024, # 4096,  # 1024,
     
     # SAE Parameters
     expansion_factor = 32,  # 64,
@@ -85,6 +85,7 @@ cfg = ViTSAERunnerConfig(
     max_batch_size_for_vit_forward_pass = 10,
     
     # from_pretrained_path = 'checkpoints/e2oev6hw/final_sparse_autoencoder_llava-hf/llava-v1.6-vicuna-7b-hf_-2_resid_12288.pt'
+    # from_pretrained_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/3cab4c8243f1f0954b74f45f3a7ba64ffaba073b/1714176_sae_image_model_activations_7.pt"
     )
 
 torch.cuda.empty_cache()
