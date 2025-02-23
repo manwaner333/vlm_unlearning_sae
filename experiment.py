@@ -308,15 +308,39 @@ def save_sae_activations(sparse_autoencoder, model, dataset_path, split, label, 
     # labels = dataset_all.unique("label")
     
     label = label
-    start_index = label * 1300 
-    if start_index >= 5000:
-        start_index = start_index - 5000
-    end_index = (label + 1 ) * 1300 + 5000
+    # save label index
+    # labels = [example['label'] for example in tqdm(dataset_all, desc="Extracting labels")]
+    # res = {}
     
-    dataset_5000 = dataset_all.select(range(start_index, end_index))
-    dataset = dataset_5000.filter(lambda example: example['label'] == label)
+    # start = 0
+    # while start < len(labels):
+    #     element = labels[start]
+    #     end = start
+        
+    #     while end < len(labels) and labels[end] == element:
+    #         end += 1
+        
+    #     res[element] = [start, end - 1]
+        
+    #     start = end
+    # with open('label_index.json', 'w') as f:
+    #     json.dump(res, f)
+    
+    with open('label_index.json', 'r') as f:
+        label_index = json.load(f)
+        
+    # start_index = label * 1300 
+    # if start_index >= 10000:
+    #     start_index = start_index - 10000
+    # end_index = (label + 1 ) * 1300 + 10000
+    
+    # dataset_5000 = dataset_all.select(range(start_index, end_index))
+    # dataset = dataset_5000.filter(lambda example: example['label'] == label)
+    
+    start_index = label_index[str(label)][0]
+    end_index = label_index[str(label)][1]
+    dataset = dataset_all.select(range(start_index, end_index+1))
     print(f"Total data quantity: {len(dataset)}")
-    
     
     if sparse_autoencoder.cfg.dataset_path=="cifar100": # Need to put this in the cfg
         image_key = 'img'
@@ -344,7 +368,7 @@ def save_sae_activations(sparse_autoencoder, model, dataset_path, split, label, 
         number_of_images_processed += max_number_of_images_per_iteration
         
 
-def save_selected_features(label, compare_label, k):
+def save_selected_features(directory, label, compare_label, k):
     sae_activations_0 = torch.load(f'{directory}/sae_activations/sae_activations_{label}.pt').to('cpu')
     sae_activations_200 = torch.load(f'{directory}/sae_activations/sae_activations_{compare_label}.pt').to('cpu') 
 
@@ -360,9 +384,15 @@ def save_selected_features(label, compare_label, k):
 
 
     diff_ratio = ratio_0 - ratio_200
-    values, indices = torch.topk(diff_ratio, k, dim=0)
-
+    values_ratio, indices_ratio = torch.topk(diff_ratio, k, dim=0)
+    values_sum_0, indices_sum_0 = torch.topk(sum_0, k, dim=0)
+    
+    # indices = indices_ratio[torch.isin(indices_ratio, indices_sum_0)]
+    indices = indices_ratio
+    values = sum_0[indices]
+    
     torch.save(indices, f'{directory}/feature_indices/feature_indices_{label}.pt')
+    torch.save(values, f'{directory}/feature_values/feature_values_{label}.pt')
     
     print("value of epsion:", epsilon)
     print("total_sum:", total_sum_0)
@@ -407,7 +437,20 @@ def save_figures(directory, dataset_path, split, label):
 def generate_adj_sae_outputs(sparse_autoencoder, model, directory, label, max_token):
     image_file = f"{directory}/images/image_{label}.png"
     raw_image = Image.open(image_file)
+    
+    res_file = f"{directory}/adj_sae_outputs.json"
+    
+    existing_labels = []
+    if os.path.exists(res_file):
+        with open(res_file, "r", encoding="utf-8") as f:
+            for line in f:
+                line = json.loads(line)
+                existing_labels.append(line['label'])
 
+        if label in existing_labels:
+            print(f"Label '{label}' Already exists, skip adding.")
+            return
+            
     conversation = [
         {
         "role": "user",
@@ -463,116 +506,117 @@ def generate_adj_sae_outputs(sparse_autoencoder, model, directory, label, max_to
 
     output_texts = model.processor.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
     print(output_texts)
+    res = {"label": label, "instruction": "Please describe this picture.", "output_texts": output_texts}
+    
+    with open(res_file, "a", encoding="utf-8") as f:
+        f.write(json.dumps(res, ensure_ascii=False) + "\n") 
+
         
     
                
     
-seed = 42
-# label = 0   
+seed = 42 
 sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/e44861c762f4a32084ac448f31cd7264800610df/2621440_sae_image_model_activations_7.pt"
 dataset_path = "evanarlian/imagenet_1k_resized_256"
 directory = "dashboard_2621440"
 
-# load model
-sparse_autoencoder, model = load_sae_model(sae_path)
+### 1. load model
+# sparse_autoencoder, model = load_sae_model(sae_path)
 
-# geneate sae_activations
-# for label in tqdm(range(0, 100, 2), desc="Processing labels"):
-#     save_sae_activations(sparse_autoencoder, model, dataset_path, split="train", label=label, seed=seed, directory=directory)
+### 2. geneate sae_activations
+# for label in tqdm(range(100,202, 2), desc="Processing labels"):
+#     file_path = f'{directory}/sae_activations/sae_activations_{label}.pt'
+#     if not os.path.exists(file_path):
+#         print(f"label: {label}")
+#         save_sae_activations(sparse_autoencoder, model, dataset_path, split="train", label=label, seed=seed, directory=directory)
+#     else:
+#         print(f"File already exists: {file_path}")
+        
+
+# save_sae_activations(sparse_autoencoder, model, dataset_path, split="train", label=700, seed=seed, directory=directory)
     
-# save figures
-# for label in tqdm(range(0, 10), desc="Processing Figures"):
+### 3. save figures
+# for label in tqdm(range(500, 700, 2), desc="Processing Figures"):
 #     save_figures(directory, dataset_path, split="val", label=label)
 
 
 
-# select features 
-# label = 0
-# compare_label = 200
-# save_selected_features(label, compare_label, k=10)  
+
+### 4. select features 
+# # label = 0
+# # compare_label = 1000 - label
+# # save_selected_features(label, compare_label, k=10)  
+
+# even_numbers = list(range(0, 1000, 2))
+# half_size = len(even_numbers) // 2
+# first_half = even_numbers[:half_size]
+# second_half = even_numbers[half_size:]
+
+# pairs = {}
+# for i, num in enumerate(first_half):
+#     pairs[num] = second_half[i]
+# for i, num in enumerate(reversed(second_half)):
+#     pairs[num] = first_half[-(i+1)]
+
+
+# for ele in tqdm(range(200, 204, 2), desc="Processing Features"):
+#     compare_label = pairs[ele]
+#     print(compare_label)
+#     save_selected_features(directory, ele, compare_label, k=10) 
+        
+
+
+### 5. generate adj_sae_outputs
+# for ele in tqdm(range(200, 202, 2), desc="Processing Features"):
+#     generate_adj_sae_outputs(sparse_autoencoder, model, directory, label=ele, max_token=306)
+
+
+
+### 6 合并生成的三种文件
+def load_json_lines(file_path):
+    data = {}
+    if os.path.exists(file_path):
+        with open(file_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line: 
+                    try:
+                        entry = json.loads(line) 
+                        label = entry["label"]
+                        instruction = entry["instruction"]
+                        output_texts = entry["output_texts"]
+                        data[label] = (instruction, output_texts) 
+                    except json.JSONDecodeError:
+                        print(f"Skip unparseable lines: {line}")
+    return data
+
+def merge_json_files(adj_sae, no_adj_sae, original_model, output_file):
+    adj_sae_file = load_json_lines(adj_sae)
+    no_adj_sae_file = load_json_lines(no_adj_sae)
+    original_model_file = load_json_lines(original_model)
+
+    common_labels = set(adj_sae_file.keys()) & set(no_adj_sae_file.keys()) & set(original_model_file.keys())
+    sorted_common_labels = sorted(common_labels)
     
+    merged_data = []
+    for label in sorted_common_labels:
+        merged_entry = {
+            "label": label,
+            "original": original_model_file[label][1],
+            "no_adjust": no_adj_sae_file[label][1],
+            "adjust": adj_sae_file[label][1]
+        }
+        merged_data.append(merged_entry)
 
-# generate adj_sae_outputs
-# generate_adj_sae_outputs(sparse_autoencoder, model, directory, label=0, max_token=612)   
-
-
-    
-
-
-
-
-
-
-
-
-
+    with open(output_file, "w", encoding="utf-8") as f:
+        for entry in merged_data:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
 
+directory = "dashboard_2621440"
+adj_sae = f"{directory}/adj_sae_outputs.json"
+no_adj_sae = f"{directory}/no_adj_sae_outputs.json"
+original_model = f"{directory}/original_model_outputs.json"
+output_file = f"{directory}/merged_file.json"
 
-
-
-
-# sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/e44861c762f4a32084ac448f31cd7264800610df/2621440_sae_image_model_activations_7.pt"
-# loaded_object = torch.load(sae_path)
-# cfg = loaded_object['cfg']
-# state_dict = loaded_object['state_dict']
-
-# sparse_autoencoder = SparseAutoencoder(cfg)
-# sparse_autoencoder.load_state_dict(state_dict)
-# sparse_autoencoder.eval()
-
-# loader = ViTSparseAutoencoderSessionloader(cfg)
-
-# model = loader.get_model(cfg.model_name)
-# model.to(cfg.device)
-
-# torch.cuda.empty_cache()
-# dataset_path = "evanarlian/imagenet_1k_resized_256"
-# # dataset_all = load_dataset(sparse_autoencoder.cfg.dataset_path, split="train")
-# dataset_all = load_dataset(dataset_path, split="val")
-# label = 0
-# dataset_5000 = dataset_all.select(range(0, 5000))
-# dataset = dataset_5000.filter(lambda example: example['label'] == label)
-# print(f"Total data quantity: {len(dataset)}")
-
-
-# if sparse_autoencoder.cfg.dataset_path=="cifar100": # Need to put this in the cfg
-#     image_key = 'img'
-# else:
-#     image_key = 'image'
-
-# image_label = 'label' 
-# dataset = dataset.shuffle(seed = seed)
-# directory = "dashboard_2621440"
-
-
-# # save image
-# first_image = dataset[3][image_key]
-# if isinstance(first_image, Image.Image):
-#     first_image.save(f"{directory}/image_{label}.png")  
-#     print("Image saved as first_image.png")
-# elif isinstance(first_image, dict) and "bytes" in first_image:
-#     img = Image.open(io.BytesIO(first_image["bytes"]))
-#     img.save(f"{directory}/image_{label}.png")
-#     print("Image saved as first_image.png")
-# else:
-#     print("Unsupported image format:", type(first_image))
-
-
-
-# number_of_images_processed = 0
-# max_number_of_images_per_iteration = len(dataset)
-# while number_of_images_processed < len(dataset):
-#     torch.cuda.empty_cache()
-#     try:
-#         images = dataset[number_of_images_processed:number_of_images_processed + max_number_of_images_per_iteration][image_key]
-#         labels = dataset[number_of_images_processed:number_of_images_processed + max_number_of_images_per_iteration][image_label]
-#         conversations = [conversation_form(str(ele)) for ele in labels]
-#     except StopIteration:
-#         print('All of the images in the dataset have been processed!')
-#         break
-    
-#     model_activations = get_all_model_activations(model, images, conversations, sparse_autoencoder.cfg) 
-#     sae_activations = get_sae_activations(model_activations, sparse_autoencoder).transpose(0,1) 
-#     torch.save(sae_activations, f'{directory}/sae_activations_{label}.pt')
-#     number_of_images_processed += max_number_of_images_per_iteration
+merge_json_files(adj_sae, no_adj_sae, original_model, output_file)

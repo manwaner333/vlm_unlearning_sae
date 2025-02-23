@@ -323,7 +323,8 @@ if sae_model:
     # image_file = "http://images.cocodataset.org/val2017/000000039769.jpg"
     # raw_image = Image.open(requests.get(image_file, stream=True).raw)
     
-    image_file = "image2.png"
+    # image_file = "image2.png"
+    image_file = "dashboard_2621440/images/image_2.png"
     raw_image = Image.open(image_file)
     
     conversation = [
@@ -454,7 +455,7 @@ if original_model:
     # image_file = "http://images.cocodataset.org/val2017/000000039769.jpg"
     # raw_image = Image.open(requests.get(image_file, stream=True).raw)
     
-    image_file = "image2.png"
+    image_file = "dashboard_2621440/images/image_2.png"  # "image2.png"
     raw_image = Image.open(image_file)
     conversation = [
         {

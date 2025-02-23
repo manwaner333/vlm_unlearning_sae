@@ -91,20 +91,19 @@ class SparseAutoencoder(HookedRootModule):
         feature_acts = self.hook_hidden_post(torch.nn.functional.relu(hidden_pre))
         
         if label is not None:
-            selected_features = torch.load(f'dashboard_2621440/feature_indices/feature_indices_{label}.pt').to(self.device)
+            selected_features = torch.load(f'dashboard_2621440/feature_indices/feature_indices_{label}.pt')[:, 0].to(self.device)
+            selected_values = torch.load(f'dashboard_2621440/feature_values/feature_values_{label}.pt')[:, 0].to(self.device)
             
-            feature_acts[...,selected_features] = feature_acts[...,selected_features] * (-0.1)
+            # feature_acts[...,selected_features] = feature_acts[...,selected_features] * -0.5 
+            # for ele in selected_features:
+                # feature_acts[...,index] = feature_acts[...,index] * (-0.5)
             
-            # for index in selected_features:
-            #     feature_acts[...,index] = feature_acts[...,index] * (-0.5)
-                
+            for i in range(selected_features.shape[0]):
+                feature =  selected_features[i]
+                value = selected_values[i]
+                feature_acts[:,:,feature] = torch.where(feature_acts[:,:,feature] > value, -0.5 * feature_acts[:,:,feature], feature_acts[:,:,feature])  # -0.5
+
         
-        # 如果进行Unlerning， 需要在此处进行修改
-        # for indx in [44498, 33126, 5137, 45064, 3520, 32389, 990, 11000, 62578, 31911]:
-        # for indx in [18048, 45787, 7029, 60239, 11297, 15239, 40921, 60026, 2939, 48811]:
-        # for indx in [45787, 18048, 15239, 7029, 60239, 11297, 48811, 40921, 60026, 37171]:
-        #     feature_acts[...,indx] = feature_acts[...,indx] *  -0.3  # -0.5       #  -0.1
-      
         sae_out = self.hook_sae_out(
             einops.einsum(
                 feature_acts,
