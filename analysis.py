@@ -119,6 +119,7 @@ import torch
 import plotly.io as pio
 from typing import Union, List, Optional
 import torch
+import matplotlib.pyplot as plt
 
 
 if torch.backends.mps.is_available():
@@ -282,7 +283,7 @@ def get_all_model_activations(model, images, conversations, cfg):
 
   
 original_model = False
-sae_model = True
+sae_model = False
 neuron_alighment = False
 scatter_plots = False
 sae_sparsity = False
@@ -475,20 +476,74 @@ if original_model:
     print(processor.decode(output[0][2:], skip_special_tokens=True))
 
 
-
-
 if sae_sparsity:
+    # SAE 一共65536个特征。 统计的时候使用了524288张图片。 每一个特征在这524288张图片上非零的数量/524288, 就是每一个特征对应的值， 记为sae sparisity。 因此该表统计了65536个特征的状况。
     sparsity_tensor = torch.load('dashboard/sae_sparsity.pt').to('cpu')
+    # sparsity_tensor = torch.clamp(sparsity_tensor, min=1e-10)
     sparsity_tensor = torch.log10(sparsity_tensor)
     fig = xp.histogram(sparsity_tensor)
-    fig.write_image("histogram.png")
+    
+    
+    fig.update_xaxes(
+        title_text='Log10(sparsity)',  # X-axis label
+        title_font_size=20,                   # X-axis label font size
+        tickfont_size=16                      # X-axis tick font size
+    )
+    fig.update_yaxes(
+        title_text='Count',               # Y-axis label
+        title_font_size=20,                   # Y-axis label font size
+        tickfont_size=16                      # Y-axis tick font size
+    )
+
+    # Customize the legend (if applicable)
+    # fig.update_layout(
+    #     legend_title_text='Legend Title',     # Legend title
+    #     legend_font_size=14,                  # Legend font size
+    #     legend=dict(
+    #         x=0.8,                            # Legend x position (0 to 1, relative to the plot)
+    #         y=0.9,                            # Legend y position (0 to 1, relative to the plot)
+    #         bgcolor='rgba(255, 255, 255, 0.5)' # Legend background color (optional)
+    #     )
+    # )
+    fig.update_layout(showlegend=False)
+    # fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
+    fig.write_image("histogram.png", scale=2)
+    
+    # sparsity_tensor[sparsity_tensor == -float('inf')] = torch.min(sparsity_tensor[sparsity_tensor != -float('inf')])
+    
+    # sparsity_tensor = sparsity_tensor.numpy()
+    # hist, bin_edges = np.histogram(sparsity_tensor, bins=10)
+    # plt.hist(bin_edges[:-1], bins=bin_edges, weights=hist, edgecolor='black', label='Histogram')
+
+    # # Set x and y axis labels with custom font size
+    # plt.xlabel('Log10 of Sparsity Value', fontsize=14)  # Customize x-axis label
+    # plt.ylabel('Frequency', fontsize=14)  # Customize y-axis label
+
+    # # Set title with custom font size
+    # plt.title('Histogram of Sparsity Values', fontsize=16)
+
+    # # Customize tick label sizes
+    # plt.xticks(fontsize=12)
+    # plt.yticks(fontsize=12)
+
+    # # Add a legend with custom font size
+    # plt.legend(fontsize=12)
+
+    # # Save the plot if needed
+    # plt.savefig('sparsity_histogram.png', dpi=300)
+
+    # # Optionally, close the plot to avoid overlapping with future plots
+    # plt.close()
+        
+    
 
 
 
 if neuron_alighment:
     
     example_neurons = [25081,25097,38764,10186,14061,22552,41781,774,886,2681]
-    sae_path = 'checkpoints/0ns2guf8/final_sparse_autoencoder_llava-hf/llava-1.5-7b-hf_-2_resid_131072.pt'
+    # sae_path = 'checkpoints/0ns2guf8/final_sparse_autoencoder_llava-hf/llava-1.5-7b-hf_-2_resid_131072.pt'
+    sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/e44861c762f4a32084ac448f31cd7264800610df/2621440_sae_image_model_activations_7.pt"
     loaded_object = torch.load(sae_path)
     cfg = loaded_object['cfg']
     state_dict = loaded_object['state_dict']
@@ -499,8 +554,10 @@ if neuron_alighment:
     model = loader.get_model(cfg.model_name)
     model.to(cfg.device)
 
-    mlp_out_weights = model.model.language_model.model.layers[cfg.block_layer].mlp.down_proj.weight.detach().transpose(0,1) # size [hidden_mlp_dimemsion, resid_dimension]
-    penultimate_mlp_out_weights = model.model.language_model.model.layers[cfg.block_layer-2].mlp.down_proj.weight.detach().transpose(0,1)
+    # mlp_out_weights = model.model.language_model.model.layers[cfg.block_layer].mlp.down_proj.weight.detach().transpose(0,1) # size [hidden_mlp_dimemsion, resid_dimension]
+    # penultimate_mlp_out_weights = model.model.language_model.model.layers[cfg.block_layer-2].mlp.down_proj.weight.detach().transpose(0,1)
+    mlp_out_weights = model.model.vision_tower.vision_model.encoder.layers[cfg.block_layer].mlp.down_proj.weight.detach().transpose(0,1)
+    penultimate_mlp_out_weights = model.model.vision_tower.vision_model.encoder.layers[cfg.block_layer-2].mlp.down_proj.weight.detach().transpose(0,1)
     sae_weights = sparse_autoencoder.W_enc.detach() # size [resid_dimension, sae_dimension]
     sae_weights /= torch.norm(sae_weights, dim = 0, keepdim = True)
     mlp_out_weights /= torch.norm(mlp_out_weights, dim = 1, keepdim = True)
@@ -551,7 +608,7 @@ if neuron_alighment:
 
 
 if scatter_plots:
-    ### 1
+    # ### 1
     expansion_factor = 64
     directory = "dashboard"  # "dashboard" 
     sparsity = torch.load(f'{directory}/sae_sparsity.pt').to('cpu') # size [n]
@@ -561,14 +618,14 @@ if scatter_plots:
     sae_mean_acts = torch.load(f'{directory}/sae_mean_acts.pt').to('cpu')  # size [n]
     sae_mean_acts = max_activating_image_values.mean(dim = -1)
 
-    df = pd.DataFrame(torch.log10(sparsity).numpy(), columns=['Data'])
+    # df = pd.DataFrame(torch.log10(sparsity).numpy(), columns=['Data'])
 
-    fig = px.histogram(df, x='Data', title='Sparsity histogram', nbins = 200)
-    fig.update_layout(
-        xaxis_title="Log 10 sparsity",
-        yaxis_title="Count"
-    )
-    fig.write_image("aaa111.png")
+    # fig = px.histogram(df, x='Data', title='Sparsity histogram', nbins = 200)
+    # fig.update_layout(
+    #     xaxis_title="Log 10 sparsity",
+    #     yaxis_title="Count"
+    # )
+    # fig.write_image("aaa111.png")
     
     ### 2
     number_of_neurons = max_activating_image_values.size()[0]
@@ -620,11 +677,39 @@ if scatter_plots:
 
     fig = px.line(label_frequency)
     fig.write_image("aaa444.png")
-
-
+    
     ### 4
+    sae_mean_acts_tensor = torch.log10(sae_mean_acts)
+    fig = xp.histogram(sae_mean_acts_tensor)
+    fig.update_xaxes(
+        title_text='Log10(men activation value)',      # X-axis label
+        title_font_size=20,                   # X-axis label font size
+        tickfont_size=16                      # X-axis tick font size
+    )
+    fig.update_yaxes(
+        title_text='Count',                 # Y-axis label
+        title_font_size=20,                   # Y-axis label font size
+        tickfont_size=16                      # Y-axis tick font size
+    )
+    # Customize the legend (if applicable)
+    # fig.update_layout(
+    #     legend_title_text='Legend Title',     # Legend title
+    #     legend_font_size=14,                  # Legend font size
+    #     legend=dict(
+    #         x=0.8,                            # Legend x position (0 to 1, relative to the plot)
+    #         y=0.9,                            # Legend y position (0 to 1, relative to the plot)
+    #         bgcolor='rgba(255, 255, 255, 0.5)' # Legend background color (optional)
+    #     )
+    # )
+    fig.update_layout(showlegend=False)
+    fig.write_image("sae_mean_acts.png", scale=2)
+    
+
+
+    ### 5
     # sae_path = f"checkpoints/0ns2guf8/final_sparse_autoencoder_llava-hf/llava-1.5-7b-hf_-2_resid_131072.pt"
-    sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/11e422e9a6b886457af1f53b095fdbc401d68233/302592_sae_image_model_activations_7.pt"
+    # sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/11e422e9a6b886457af1f53b095fdbc401d68233/302592_sae_image_model_activations_7.pt"
+    sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/e44861c762f4a32084ac448f31cd7264800610df/2621440_sae_image_model_activations_7.pt"
     loaded_object = torch.load(sae_path)
     cfg = loaded_object['cfg']
     state_dict = loaded_object['state_dict']
@@ -673,7 +758,8 @@ if focus_features:
     # sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/11e422e9a6b886457af1f53b095fdbc401d68233/302592_sae_image_model_activations_7.pt"
     # sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/9ae094c2e23727d1c77d05d46f419d2b1e2e6aef/605184_sae_image_model_activations_7.pt"
     # sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/aa9c6eb62ded51020e8c5c34182602af353d9d77/1210112_sae_image_model_activations_7.pt"
-    sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/3cab4c8243f1f0954b74f45f3a7ba64ffaba073b/1714176_sae_image_model_activations_7.pt"
+    # sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/3cab4c8243f1f0954b74f45f3a7ba64ffaba073b/1714176_sae_image_model_activations_7.pt"
+    sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/e44861c762f4a32084ac448f31cd7264800610df/2621440_sae_image_model_activations_7.pt"
     loaded_object = torch.load(sae_path)
     cfg = loaded_object['cfg']
     state_dict = loaded_object['state_dict']
@@ -685,7 +771,7 @@ if focus_features:
     image_label = 'label' 
     image_key = 'image'
     dataset = dataset.shuffle(seed = seed)
-    directory = "dashboard_1714176"
+    directory = "dashboard"
         
     max_activating_image_indices = torch.load(f'{directory}/max_activating_image_indices.pt').to('cpu').to(torch.int32)
     max_activating_image_values = torch.load(f'{directory}/max_activating_image_values.pt').to('cpu') 
@@ -701,8 +787,9 @@ if focus_features:
     # neuron_list = [18048, 15239, 40921, 16830, 20003,  9512,  9537, 18422,   837, 10637, 17803,  4624, 40132, 34198, 18922, 16183, 56256, 52172, 11539, 58812]
     # neuron_list = [18048, 15239, 40921, 16830, 20003,  9512,  9537, 18422,   837]
     # neuron_list = [18048, 40921, 15239,  9512, 15756, 12468, 16830,  7802, 14260, 60111, 9537, 56821, 10506,  1197, 20003, 52355, 24553, 15821, 50541, 11382]
-    neuron_list = [18048, 40921, 15239,  9512, 15756, 12468, 16830,  7802, 14260, 60111, 9537]
+    # neuron_list = [18048, 40921, 15239,  9512, 15756, 12468, 16830,  7802, 14260, 60111, 9537]
 
+    neuron_list = [13127, 29133, 8020, 18048, 18029, 24195, 15821, 54816,  9512, 58213, 10251,  3402]   # , 13127, 29133, 8020, 18048, 18029, 24195, 15821, 54816,  9512, 58213, 10251,  3402
     assert max_activating_image_values.size() == max_activating_image_indices.size(), "size of max activating image indices doesn't match the size of max activing values."
     number_of_neurons, number_of_max_activating_examples = max_activating_image_values.size()
     # for neuron in trange(number_of_neurons):
@@ -817,3 +904,221 @@ if focus_images:
     print("ratio shape:", ratio_0.shape)
     print("Top 10 indices:", indices.squeeze().tolist())
     print("Top 10 values:", values.squeeze().tolist())
+    
+    
+    
+    
+
+
+
+
+def load_sae_model(sae_path):
+    sae_path = sae_path
+    loaded_object = torch.load(sae_path)
+    cfg = loaded_object['cfg']
+    state_dict = loaded_object['state_dict']
+
+    sparse_autoencoder = SparseAutoencoder(cfg)
+    sparse_autoencoder.load_state_dict(state_dict)
+    sparse_autoencoder.eval()
+
+    loader = ViTSparseAutoencoderSessionloader(cfg)
+    model = loader.get_model(cfg.model_name)
+    model.to(cfg.device)
+    
+    return sparse_autoencoder, model
+
+
+def generate_adj_sae_outputs(sparse_autoencoder, model, raw_image, text_prompt, label, max_token):
+    
+    # res_file = f"{directory}/adj_sae_outputs.json"
+    
+    # existing_labels = []
+    # if os.path.exists(res_file):
+    #     with open(res_file, "r", encoding="utf-8") as f:
+    #         for line in f:
+    #             line = json.loads(line)
+    #             existing_labels.append(line['label'])
+
+    #     if label in existing_labels:
+    #         print(f"Label '{label}' Already exists, skip adding.")
+    #         return
+            
+    conversation = [
+        {
+        "role": "user",
+        "content": [
+            {"type": "text", "text": text_prompt},   # "What are these?" "Please describe this picture."
+            {"type": "image"},
+            ],
+        },
+    ]
+    
+    prompt = model.processor.apply_chat_template(conversation, add_generation_prompt=True)
+    model_inputs = model.processor(images=raw_image, text=prompt, return_tensors='pt').to(sparse_autoencoder.device, torch.float16)
+    
+    input_ids = model_inputs.input_ids
+    attention_mask = model_inputs.attention_mask
+    pixel_values = model_inputs.pixel_values
+    # image_sizes = model_inputs.image_sizes
+
+    tokenizer = model.processor.tokenizer
+    prompt_str_tokens = tokenizer.convert_ids_to_tokens(input_ids[0]) 
+    # answer_str_tokens = tokenizer.convert_ids_to_tokens(answer_tokens[0])
+
+    max_token = max_token
+    generated_ids = input_ids.clone()
+
+
+    def sae_hook(activations):
+        activations[:,0:576,:] = sparse_autoencoder(activations[:,0:576,:], label)[0]    
+        return (activations,)
+
+    sae_hooks = [Hook(sparse_autoencoder.cfg.block_layer, sparse_autoencoder.cfg.module_name, sae_hook, return_module_output=True)]
+
+    new_tokens = []
+    with torch.no_grad():
+        for ele in range(max_token):
+            print(f"Token: {ele}")
+            outputs = model.run_with_hooks(
+                sae_hooks,
+                return_type='output',
+                input_ids=generated_ids,
+                attention_mask=attention_mask,
+                pixel_values=pixel_values,
+                # image_sizes=image_sizes,
+            )
+            
+            logits = outputs.logits[:, -1, :]  
+            next_token = torch.argmax(logits, dim=-1).unsqueeze(-1)
+            generated_ids = torch.cat([generated_ids, next_token], dim=-1)
+            new_tokens.append(next_token)
+            new_mask = torch.ones((attention_mask.shape[0], 1), device=device, dtype=attention_mask.dtype)
+            attention_mask = torch.cat([attention_mask, new_mask], dim=-1)
+            torch.cuda.empty_cache()
+
+    output_texts = model.processor.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
+    print(output_texts)
+    
+    # res = {"label": label, "instruction": "Please describe this picture.", "output_texts": output_texts}
+    # with open(res_file, "a", encoding="utf-8") as f:
+    #     f.write(json.dumps(res, ensure_ascii=False) + "\n") 
+
+
+def generate_original_outputs(model, processor, raw_image, text_prompt, max_token=306):
+    
+    conversation = [
+        {
+        "role": "user",
+        "content": [
+            {"type": "text", "text": text_prompt},  # "What are these?"  "Please describe the objects in the image and their corresponding colors."
+            {"type": "image"},
+            ],
+        },
+    ]
+
+    prompt = processor.apply_chat_template(conversation, add_generation_prompt=True)
+    model_inputs = processor(images=raw_image, text=prompt, return_tensors='pt').to(device, torch.float16)
+    output = model.generate(**model_inputs, max_new_tokens=max_token, do_sample=False)
+
+    output_texts = processor.decode(output[0][2:], skip_special_tokens=True)
+    print(output_texts)
+    
+
+
+# 测试一个case 在多种不同特征下的效果
+seed = 42 
+sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/e44861c762f4a32084ac448f31cd7264800610df/2621440_sae_image_model_activations_7.pt"
+dataset_path = "evanarlian/imagenet_1k_resized_256"
+directory = "dashboard_2621440"
+
+### 1. load model
+# sparse_autoencoder, model = load_sae_model(sae_path)
+
+# # bird: 
+# f'dashboard_2621440/feature_indices/feature_indices_16.pt'
+# f'dashboard_2621440/feature_values/feature_values_16.pt'
+
+# # volleyball
+# f'dashboard_2621440/feature_indices/sport/feature_indices_5.pt'
+# f'dashboard_2621440/feature_values/sport/feature_values_5.pt'
+
+# # green 
+# f'dashboard_2621440/feature_indices/color/feature_indices_2.pt'
+# f'dashboard_2621440/feature_values/color/feature_values_2.pt'
+
+
+# # happy
+# f'dashboard_2621440/feature_indices/emotion/feature_indices_0.pt'
+# f'dashboard_2621440/feature_values/emotion/feature_values_0.pt'
+
+
+# # material
+# f'dashboard_2621440/feature_indices/material/feature_indices_0.pt'
+# f'dashboard_2621440/feature_values/material/feature_values_0.pt'
+
+
+# bird
+# ele = 6
+# label = 'bird' 
+# text = "Please describe the objects in the image, including their colors."
+# image_file = f"{directory}/images/multi/image_{label}.jpg"
+# raw_image = Image.open(image_file)
+# generate_adj_sae_outputs(sparse_autoencoder, model, raw_image, text, label=ele, max_token=306)
+
+
+# # boat
+# ele = 6
+# label = 'boat' 
+# text = "Please describe the objects in the image, including their materials."
+# image_file = f"{directory}/images/multi/image_{label}.png"
+# raw_image = Image.open(image_file)
+# generate_adj_sae_outputs(sparse_autoencoder, model, raw_image, text, label=ele, max_token=306)
+
+# sport
+# ele = 6
+# label = 'sport' 
+# text = "Please describe the sport and the mood of the person in the picture from the following options:[happy, sad, angry, surprised, scared, disgusted, excited, relaxed, confused, bored].."
+# image_file = f"{directory}/images/multi/image_{label}.png"
+# raw_image = Image.open(image_file)
+# generate_adj_sae_outputs(sparse_autoencoder, model, raw_image, text, label=ele, max_token=306)
+
+
+
+    
+# bird
+# seed = 42
+# label = 'bird'
+# model_id = "llava-hf/llava-1.5-7b-hf"
+# directory = "dashboard_2621440"
+# text = "Please describe the objects in the image, including their colors."
+
+
+# boat
+# seed = 42
+# label = 'boat' 
+# model_id = "llava-hf/llava-1.5-7b-hf"
+# directory = "dashboard_2621440"
+# text = "Please describe the objects in the image, including their materials."
+
+
+# sport
+# seed = 42
+# label = 'sport' 
+# model_id = "llava-hf/llava-1.5-7b-hf"
+# directory = "dashboard_2621440"
+# text = "Please describe the sport and the mood of the person in the picture."
+
+
+# image_file = f"{directory}/images/multi/image_{label}.png"
+# raw_image = Image.open(image_file)
+
+
+# model = LlavaForConditionalGeneration.from_pretrained(
+#     model_id, 
+#     torch_dtype=torch.float16, 
+#     low_cpu_mem_usage=True, 
+# ).to(device)
+# processor = AutoProcessor.from_pretrained(model_id)
+
+# generate_original_outputs(model, processor, raw_image, text, max_token=306)

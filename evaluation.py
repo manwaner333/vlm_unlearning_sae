@@ -143,36 +143,42 @@ def gpt_wrapper(qa, sys_prompt=None, max_tokens=512):
 if __name__ == '__main__':
     
     ### 1 合并生成的三种文件
-    directory = "dashboard_2621440"
-    adj_sae = f"{directory}/adj_sae_outputs.json"
-    no_adj_sae = f"{directory}/no_adj_sae_outputs.json"
-    original_model = f"{directory}/original_model_outputs.json"
-    output_file = f"{directory}/merged_file.json"
+    # directory = "dashboard_2621440"
+    # adj_sae = f"{directory}/adj_sae_outputs.json"
+    # no_adj_sae = f"{directory}/no_adj_sae_outputs.json"
+    # original_model = f"{directory}/original_model_outputs.json"
+    # output_file = f"{directory}/merged_file.json"
 
-    merge_json_files(adj_sae, no_adj_sae, original_model, output_file)
+    # merge_json_files(adj_sae, no_adj_sae, original_model, output_file)
     
     
     ### 2. 用openai评估生成的内容
-    # file_path = "dashboard_2621440/objects_class.txt" 
-    # data_dict = txt_to_dict(file_path)
-    # res_file = "dashboard_2621440/merged_file.json"
-    # new_res_file = "dashboard_2621440/merged_file_add_evaluation.json"
-    # a = []
-    # with open(res_file, "r", encoding="utf-8") as f:
-    #     for line in f:
-    #         print("qingli!!")
-    #         line = json.loads(line)
-    #         label = line['label']
-    #         # instruction = line['instruction']
-    #         object = data_dict[label]
-    #         original_text = line["original"]
-    #         no_adjust = line['no_adjust']
-    #         adjust = line['adjust']
-    #         qa = f"Text: {adjust}\n Object: {object}"
-    #         input_prompt = f"{sys_prompt}\n\nNow classify the following response:\n{qa}"
-    #         pred, raw = gpt_wrapper(input_prompt, sys_prompt=None)
-    #         res = {"label": label, "original": original_text, "no_adjust": no_adjust, "adjust": adjust, "object": object,"evaluation": pred}  # "instruction": instruction,
-    #         a.append(res)
+    file_path = "dashboard_2621440/objects_class.txt" 
+    data_dict = txt_to_dict(file_path)
+    res_file = "dashboard_2621440/merged_file.json"
+    new_res_file = "dashboard_2621440/merged_file_add_evaluation.json"
+    a = []
+    correct_num = 0
+    with open(res_file, "r", encoding="utf-8") as f:
+        for line in f:
+            print("qingli!!")
+            line = json.loads(line)
+            label = line['label']
+            object = data_dict[label]
+            original_text = line["original"]
+            no_adjust = line['no_adjust']
+            adjust = line['adjust']
+            qa = f"Text: {original_text}\n Object: {object}"
+            # qa = f"Text: {adjust}\n Object: {object}"
+            input_prompt = f"{sys_prompt}\n\nNow classify the following response:\n{qa}"
+            pred, raw = gpt_wrapper(input_prompt, sys_prompt=None)
+            if pred == 2:
+                correct_num += 1
+            res = {"label": label, "original": original_text, "no_adjust": no_adjust, "adjust": adjust, "object": object,"evaluation": pred}  # "instruction": instruction,
+            a.append(res)
+    
+    correct_ratio = correct_num / 200
+    print(f"Correct Ratio: {correct_ratio}")
 
                 
     # with open(new_res_file, "a", encoding="utf-8") as f_new:
