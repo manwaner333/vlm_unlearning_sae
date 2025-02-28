@@ -3,7 +3,7 @@ import torch.nn as nn
 import timm
 import math
 from transformers import LlavaForConditionalGeneration, LlavaNextProcessor, LlavaNextForConditionalGeneration
-from transformers import CLIPProcessor, CLIPModel, CLIPImageProcessor, CLIPTokenizerFast, AutoTokenizer, AutoProcessor
+from transformers import CLIPProcessor, CLIPModel, CLIPImageProcessor, CLIPTokenizerFast, AutoTokenizer, AutoProcessor, MllamaForConditionalGeneration
 from typing import Callable
 from contextlib import contextmanager
 from typing import List, Union, Dict, Tuple
@@ -41,7 +41,8 @@ class Hook():
   
   
   def get_attr_path(self, block_layer: int, module_name: str) -> str:
-    attr_path = f'vision_tower.vision_model.encoder.layers[{block_layer}]'
+    attr_path = f'vision_model.transformer.layers[{block_layer}]'   # "meta-llama/Llama-3.2-11B-Vision-Instruct
+    # attr_path = f'vision_tower.vision_model.encoder.layers[{block_layer}]'  # "llava-1.5-7b-hf"
     # attr_path = f'language_model.model.layers[{block_layer}]'
     attr_path += self.path_dict[module_name]
     return attr_path
@@ -73,6 +74,8 @@ class HookedVisionTransformer():
     self.model = model.to(device)
     self.processor = processor
     # self.tokenizer = tokenizer
+    # for name, param in self.model.named_parameters():
+    #     print(f"name: {name}, requires_grad: {param.requires_grad}")
 
   def get_ViT1(self, model_name):
     model = CLIPModel.from_pretrained(model_name)
@@ -91,8 +94,18 @@ class HookedVisionTransformer():
     # tokenizer = AutoTokenizer.from_pretrained(model_name)
     # model = LlavaNextForConditionalGeneration.from_pretrained(model_name, attn_implementation="flash_attention_2", torch_dtype=torch.float16)
     # processor.image_processor.size = {"height": 336, "width": 336}
-    processor = AutoProcessor.from_pretrained("llava-hf/llava-1.5-7b-hf")
-    model = LlavaForConditionalGeneration.from_pretrained("llava-hf/llava-1.5-7b-hf", attn_implementation="flash_attention_2", torch_dtype=torch.float16)
+    
+    # llava-hf/llava-1.5-7b-hf
+    # processor = AutoProcessor.from_pretrained("llava-hf/llava-1.5-7b-hf")
+    # model = LlavaForConditionalGeneration.from_pretrained("llava-hf/llava-1.5-7b-hf", attn_implementation="flash_attention_2", torch_dtype=torch.float16)
+    
+    # meta-llama/Llama-3.2-11B-Vision-Instruct
+    processor = AutoProcessor.from_pretrained("meta-llama/Llama-3.2-11B-Vision-Instruct")
+    model = MllamaForConditionalGeneration.from_pretrained("meta-llama/Llama-3.2-11B-Vision-Instruct", torch_dtype=torch.bfloat16) # , device_map="auto"
+    
+    # llava-hf/llama3-llava-next-8b-hf
+    # processor = LlavaNextProcessor.from_pretrained("llava-hf/llama3-llava-next-8b-hf")
+    # model = LlavaNextForConditionalGeneration.from_pretrained("llava-hf/llama3-llava-next-8b-hf", torch_dtype=torch.float16) 
     return model, processor
 
   def run_with_cache(self, list_of_hook_locations: List[Tuple[int,str]], *args, return_type = "output", **kwargs):

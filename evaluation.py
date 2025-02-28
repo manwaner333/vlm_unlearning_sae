@@ -181,9 +181,9 @@ if __name__ == '__main__':
     print(f"Correct Ratio: {correct_ratio}")
 
                 
-    # with open(new_res_file, "a", encoding="utf-8") as f_new:
-    #     for entry in a:
-    #         f_new.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    with open(new_res_file, "a", encoding="utf-8") as f_new:
+        for entry in a:
+            f_new.write(json.dumps(entry, ensure_ascii=False) + "\n")
             
     ### 2. 统计评估的内容
     # correct_num = 0
@@ -197,4 +197,3 @@ if __name__ == '__main__':
                 
     # correct_ratio = correct_num / total_num
     # print(f"Correct Ratio: {correct_ratio}")
-                

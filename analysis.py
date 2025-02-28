@@ -287,7 +287,7 @@ sae_model = False
 neuron_alighment = False
 scatter_plots = False
 sae_sparsity = False
-focus_features = False
+focus_features = True
 focus_images = False
 
 
@@ -507,7 +507,7 @@ if sae_sparsity:
     # )
     fig.update_layout(showlegend=False)
     # fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
-    fig.write_image("histogram.png", scale=2)
+    fig.write_image("histogram_1.png", scale=2)
     
     # sparsity_tensor[sparsity_tensor == -float('inf')] = torch.min(sparsity_tensor[sparsity_tensor != -float('inf')])
     
@@ -777,10 +777,10 @@ if focus_features:
     max_activating_image_values = torch.load(f'{directory}/max_activating_image_values.pt').to('cpu') 
 
     # 找出激活着比较高的特征， 以及这些特征对应的比较强的图片
-    num_neurons = 20
-    row_sums = max_activating_image_values.sum(dim=1, keepdim=True)
-    top20_indices = torch.topk(row_sums.squeeze(), 20).indices
-    print(top20_indices)
+    # num_neurons = 20
+    # row_sums = max_activating_image_values.sum(dim=1, keepdim=True)
+    # top20_indices = torch.topk(row_sums.squeeze(), 30).indices
+    # print(top20_indices)
 
     # neuron_list = [43208, 17533,  2950, 34679, 49570,  194, 35429, 28796, 42148,  7401, 14129, 63464, 24866, 19612,  8645, 13087, 17839, 52874, 45455,  6295] 
     # neuron_list = [43208, 17533,  2950, 34679, 49570,  194, 35429, 28796, 42148]   
@@ -789,11 +789,13 @@ if focus_features:
     # neuron_list = [18048, 40921, 15239,  9512, 15756, 12468, 16830,  7802, 14260, 60111, 9537, 56821, 10506,  1197, 20003, 52355, 24553, 15821, 50541, 11382]
     # neuron_list = [18048, 40921, 15239,  9512, 15756, 12468, 16830,  7802, 14260, 60111, 9537]
 
-    neuron_list = [13127, 29133, 8020, 18048, 18029, 24195, 15821, 54816,  9512, 58213, 10251,  3402]   # , 13127, 29133, 8020, 18048, 18029, 24195, 15821, 54816,  9512, 58213, 10251,  3402
+    # neuron_list = [42524, 30191,  1102,  7175, 16147, 31263, 43934, 30087, 13127, 29133, 8020, 18048, 18029, 24195, 15821, 54816,  9512, 58213, 10251,  3402]   # 
+    neuron_list = [45419, 16148, 24553, 33397, 15756, 34674, 52355, 14316,  4882, 42623]
     assert max_activating_image_values.size() == max_activating_image_indices.size(), "size of max activating image indices doesn't match the size of max activing values."
     number_of_neurons, number_of_max_activating_examples = max_activating_image_values.size()
     # for neuron in trange(number_of_neurons):
     for neuron in neuron_list:
+        print("qingli")
         neuron_dead = True
         for max_activating_image in range(number_of_max_activating_examples):
             if max_activating_image_values[neuron, max_activating_image].item()>0:
@@ -1027,10 +1029,10 @@ def generate_original_outputs(model, processor, raw_image, text_prompt, max_toke
 
 
 # 测试一个case 在多种不同特征下的效果
-seed = 42 
-sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/e44861c762f4a32084ac448f31cd7264800610df/2621440_sae_image_model_activations_7.pt"
-dataset_path = "evanarlian/imagenet_1k_resized_256"
-directory = "dashboard_2621440"
+# seed = 42 
+# sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/e44861c762f4a32084ac448f31cd7264800610df/2621440_sae_image_model_activations_7.pt"
+# dataset_path = "evanarlian/imagenet_1k_resized_256"
+# directory = "dashboard_2621440"
 
 ### 1. load model
 # sparse_autoencoder, model = load_sae_model(sae_path)

@@ -73,7 +73,7 @@ class SparseAutoencoder(HookedRootModule):
 
         self.setup()  # Required for `HookedRootModule`s
 
-    def forward(self, x, label = None, dead_neuron_mask = None):  # 修改了此处
+    def forward(self, x, dead_neuron_mask = None):  # 修改了此处 label = None, 
         # move x to correct dtype
         x = x.to(self.dtype)
         sae_in = self.hook_sae_in(
@@ -90,37 +90,37 @@ class SparseAutoencoder(HookedRootModule):
         )
         feature_acts = self.hook_hidden_post(torch.nn.functional.relu(hidden_pre))
         
-        if label is not None:
-            # feature_indices_file = f'dashboard_2621440/feature_indices/feature_indices_16.pt'   #  f'dashboard_2621440/feature_indices/sport/feature_indices_{label}.pt'
-            # feature_values_file = f'dashboard_2621440/feature_values/feature_values_16.pt'   # f'dashboard_2621440/feature_values/sport/feature_values_{label}.pt'
+        # if label is not None:
+        #     # feature_indices_file = f'dashboard_2621440/feature_indices/feature_indices_16.pt'   #  f'dashboard_2621440/feature_indices/sport/feature_indices_{label}.pt'
+        #     # feature_values_file = f'dashboard_2621440/feature_values/feature_values_16.pt'   # f'dashboard_2621440/feature_values/sport/feature_values_{label}.pt'
             
-            # feature_indices_file = f'dashboard_2621440/feature_indices/sport/feature_indices_5.pt'
-            # feature_values_file = f'dashboard_2621440/feature_values/sport/feature_values_5.pt'
+        #     # feature_indices_file = f'dashboard_2621440/feature_indices/sport/feature_indices_5.pt'
+        #     # feature_values_file = f'dashboard_2621440/feature_values/sport/feature_values_5.pt'
             
-            # feature_indices_file = f'dashboard_2621440/feature_indices/color/feature_indices_2.pt'
-            # feature_values_file = f'dashboard_2621440/feature_values/color/feature_values_2.pt'
+        #     # feature_indices_file = f'dashboard_2621440/feature_indices/color/feature_indices_2.pt'
+        #     # feature_values_file = f'dashboard_2621440/feature_values/color/feature_values_2.pt'
             
-            # feature_indices_file = f'dashboard_2621440/feature_indices/emotion/feature_indices_0.pt'
-            # feature_values_file = f'dashboard_2621440/feature_values/emotion/feature_values_0.pt'
+        #     # feature_indices_file = f'dashboard_2621440/feature_indices/emotion/feature_indices_0.pt'
+        #     # feature_values_file = f'dashboard_2621440/feature_values/emotion/feature_values_0.pt'
             
-            feature_indices_file = f'dashboard_2621440/feature_indices/material/feature_indices_0.pt'
-            feature_values_file = f'dashboard_2621440/feature_values/material/feature_values_0.pt'
+        #     feature_indices_file = f'dashboard_2621440/feature_indices/material/feature_indices_0.pt'
+        #     feature_values_file = f'dashboard_2621440/feature_values/material/feature_values_0.pt'
             
-            # selected_features = torch.load(f'dashboard_2621440/feature_indices/sport/feature_indices_{label}.pt')[:, 0].to(self.device)   # dashboard_2621440/feature_indices/feature_indices_{label}.pt
-            # selected_values = torch.load(f'dashboard_2621440/feature_values/sport/feature_values_{label}.pt')[:, 0].to(self.device)
+        #     # selected_features = torch.load(f'dashboard_2621440/feature_indices/sport/feature_indices_{label}.pt')[:, 0].to(self.device)   # dashboard_2621440/feature_indices/feature_indices_{label}.pt
+        #     # selected_values = torch.load(f'dashboard_2621440/feature_values/sport/feature_values_{label}.pt')[:, 0].to(self.device)
             
-            selected_features = torch.load(feature_indices_file)[:, 0].to(self.device)
-            selected_values = torch.load(feature_values_file)[:, 0].to(self.device)
+        #     selected_features = torch.load(feature_indices_file)[:, 0].to(self.device)
+        #     selected_values = torch.load(feature_values_file)[:, 0].to(self.device)
             
-            # feature_acts[...,selected_features] = feature_acts[...,selected_features] * -0.5 
-            # for ele in selected_features:
-                # feature_acts[...,index] = feature_acts[...,index] * (-0.5)
+        #     # feature_acts[...,selected_features] = feature_acts[...,selected_features] * -0.5 
+        #     # for ele in selected_features:
+        #         # feature_acts[...,index] = feature_acts[...,index] * (-0.5)
             
-            for i in range(selected_features.shape[0]):
-                feature =  selected_features[i]
-                value = selected_values[i]
-                # feature_acts[:,:,feature] = torch.where(feature_acts[:,:,feature] > value, -1.0 * feature_acts[:,:,feature], feature_acts[:,:,feature])  # -0.5
-                feature_acts[...,feature] = feature_acts[...,feature] * (-0.5)
+        #     for i in range(selected_features.shape[0]):
+        #         feature =  selected_features[i]
+        #         value = selected_values[i]
+        #         # feature_acts[:,:,feature] = torch.where(feature_acts[:,:,feature] > value, -1.0 * feature_acts[:,:,feature], feature_acts[:,:,feature])  # -0.5
+        #         feature_acts[...,feature] = feature_acts[...,feature] * (-0.5)
 
         
         sae_out = self.hook_sae_out(

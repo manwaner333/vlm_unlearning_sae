@@ -179,16 +179,52 @@ def generate_original_outputs(model, processor, directory, label, max_token=306)
         f.write(json.dumps(res, ensure_ascii=False) + "\n") 
     
 
-seed = 42
-model_id = "llava-hf/llava-1.5-7b-hf"
-model = LlavaForConditionalGeneration.from_pretrained(
-    model_id, 
-    torch_dtype=torch.float16, 
-    low_cpu_mem_usage=True, 
-).to(device)
-processor = AutoProcessor.from_pretrained(model_id)
+# seed = 42
+# model_id = "llava-hf/llava-1.5-7b-hf"
+# model = LlavaForConditionalGeneration.from_pretrained(
+#     model_id, 
+#     torch_dtype=torch.float16, 
+#     low_cpu_mem_usage=True, 
+# ).to(device)
+# processor = AutoProcessor.from_pretrained(model_id)
 
 
-directory = "dashboard_2621440"
-for ele in tqdm(range(200, 202, 2), desc="Processing Features"):
-    generate_original_outputs(model, processor, directory, ele, max_token=306)
+# directory = "dashboard_2621440"
+# for ele in tqdm(range(200, 202, 2), desc="Processing Features"):
+#     generate_original_outputs(model, processor, directory, ele, max_token=306)
+
+
+
+# 测试一个新的模型
+from transformers import LlavaNextProcessor, LlavaNextForConditionalGeneration
+import torch
+from PIL import Image
+import requests
+
+processor = LlavaNextProcessor.from_pretrained("llava-hf/llama3-llava-next-8b-hf")
+model = LlavaNextForConditionalGeneration.from_pretrained("llava-hf/llama3-llava-next-8b-hf", torch_dtype=torch.float16, device_map="auto") 
+
+# prepare image and text prompt, using the appropriate prompt template
+image_file = "image1.jpg"
+image = Image.open(image_file)
+
+# Define a chat histiry and use `apply_chat_template` to get correctly formatted prompt
+# Each value in "content" has to be a list of dicts with types ("text", "image") 
+conversation = [
+    {
+
+      "role": "user",
+      "content": [
+          {"type": "text", "text": "What are these?"},
+          {"type": "image"},
+        ],
+    },
+]
+prompt = processor.apply_chat_template(conversation, add_generation_prompt=True)
+
+inputs = processor(images=image, text=prompt, return_tensors="pt").to(model.device)
+
+# autoregressively complete prompt
+output = model.generate(**inputs, max_new_tokens=100)
+
+print(processor.decode(output[0], skip_special_tokens=True))

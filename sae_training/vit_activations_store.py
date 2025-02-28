@@ -141,17 +141,25 @@ class ViTActivationsStore:
     #                 batch_of_images.append(next(self.iterable_dataset)[self.image_key])
     #     return batch_of_images
     
+    # def conversation_form(self, key): # for llava-1.5-7b-hf, llava-hf/llama3-llava-next-8b-hf
+    #     conversation = [
+    #         {
+    #         "role": "user",
+    #         "content": [
+    #             {"type": "text", "text": key},
+    #             {"type": "image"},
+    #             ],
+    #         },
+    #     ]
+    #     return conversation
+    
     def conversation_form(self, key):
-        conversation = [
-            {
-            "role": "user",
-            "content": [
-                {"type": "text", "text": key},
+        messages = [{"role": "user", "content": [
                 {"type": "image"},
-                ],
-            },
-        ]
-        return conversation
+                {"type": "text", "text": key}
+            ]}]
+        return messages
+    
     
     def get_image_conversation_batches(self):
         """
@@ -223,9 +231,12 @@ class ViTActivationsStore:
         for ele in conversation_batches:
             batch_of_prompts.append(self.model.processor.apply_chat_template(ele, add_generation_prompt=True))
         
-        inputs = self.model.processor(images=image_batches, text=batch_of_prompts, padding=True, return_tensors="pt").to(self.cfg.device)
+        # inputs = self.model.processor(images=image_batches, text=batch_of_prompts, padding=True, return_tensors="pt").to(self.cfg.device) # for llava-1.5-7b-hf
+        # inputs = self.model.processor(image_batches, batch_of_prompts, add_special_tokens=False, return_tensors="pt").to(self.cfg.device)  # for meta-llama/Llama-3.2-11B-Vision-Instruct
+        inputs = self.model.processor(images=image_batches, text=batch_of_prompts, padding=True, return_tensors="pt").to(self.cfg.device)  # for llava-hf/llama3-llava-next-8b-hf
+
         
-        # print((inputs.input_ids != self.model.processor.tokenizer.pad_token_id).sum(dim=1))
+        print((inputs.input_ids != self.model.processor.tokenizer.pad_token_id).sum(dim=1))
         
         # output = self.model.model.generate(**inputs, max_new_tokens=100)
         # for n, p in self.model.model.named_parameters():
@@ -240,8 +251,9 @@ class ViTActivationsStore:
 
         
         if self.cfg.class_token:
-          # Only keep the class token
-          activations = activations[:,-7,:] 
+            # Only keep the class token
+            # activations = activations[:,-7,:]  # for llava-1.5-7b-hf
+            activations = activations[:,-1,:]  # for llava-hf/llama3-llava-next-8b-hf
           # activations = activations[:,0,:] # See the forward(), foward_head() methods of the VisionTransformer class in timm. 
           # Eg "x = x[:, 0]  # class token" - the [:,0] indexes the batch dimension then the token dimension
 
