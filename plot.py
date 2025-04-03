@@ -2,10 +2,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-# title_size = 25  
-# label_size = 20  
-# tick_size = 16
-# legend_size = 13
+title_size = 25  
+label_size = 20  
+tick_size = 16
+legend_size = 13
 
 # # 数据
 # methods = ['GA', 'GD', 'KL', 'PO', 'Ours']
@@ -62,41 +62,90 @@ import numpy as np
 # plt.savefig("robustness.png", dpi=400, bbox_inches="tight")
 
 
+#### robustness 只画其中一个图形
+# # 数据 SAUCE
+# title_size = 25  
+# label_size = 22  
+# tick_size = 18
+# legend_size = 18
 
-##### composite accuracy
-import matplotlib.pyplot as plt
-import numpy as np
+# methods = ['GA', 'GD', 'KL', 'PO', 'SAUCE']
+# origin_concrete = [60.0, 69.2, 79.7, 77.9, 91.5]  # Concrete Concepts - Origin
+# translation_concrete = [58.4, 65.4, 68.2, 64.1, 86.0]  # Concrete Concepts - Translation
+# quantization_concrete = [56.5, 61.8, 69.3, 60.7, 84.4]  # Concrete Concepts - Quantization
+
+
+# x = np.arange(len(methods))  # 横坐标位置
+# width = 0.2  # 柱状图宽度
+
+# # 创建图形和子图
+# fig, ax1 = plt.subplots(figsize=(12, 8))
+
+# # 绘制第一张图：Concrete Concepts
+# rects1 = ax1.bar(x - width, origin_concrete, width, label='Before Attacks', color='#718DBF') # 'color='skyblue'
+# rects2 = ax1.bar(x, translation_concrete, width, label='Translation Attack', color='#E58E68')  # 'lightgreen'
+# rects3 = ax1.bar(x + width, quantization_concrete, width, label='Quantization Attack', color='#5CB090') # salmon'
+
+# # 设置第一张图的属性
+# ax1.set_xlabel('Methods', fontsize=label_size)
+# ax1.set_ylabel(r'$\text{UA}_{\text{d}}$ (%)', fontsize=label_size)
+# # ax1.set_title('Concrete Concept Unlearning Task', fontsize=title_size)
+# ax1.set_xticks(x)
+# ax1.set_xticklabels(methods, fontsize=tick_size)
+# ax1.legend(fontsize=legend_size)
+# ax1.grid(True, linestyle='--', alpha=0.6)
+# ax1.set_facecolor('#f7f7f7')  # 淡淡的灰色背景
+# ax1.tick_params(axis='y', labelsize=tick_size) 
+
+# # 调整布局
+# plt.tight_layout()
+
+# # 显示图形
+# # plt.show()
+# plt.savefig("methods_robustness.png", dpi=400, bbox_inches="tight")
+
+
+
+# # ##### composite accuracy
+# # import matplotlib.pyplot as plt
+# # import numpy as np
+
+title_size = 25  
+label_size = 22  
+tick_size = 18
+legend_size = 18
 
 # 数据
 num_concepts = [1, 2, 3, 4, 5, 6]  # 横坐标：Number of Concepts
 
 # 具体概念的数据
-concrete_unlearning = [85, 80, 78, 82, 84, 88]  # 具体概念的 Unlearning Accuracy
-concrete_utility = [90, 88, 85, 87, 89, 92]  # 具体概念的 Utility Accuracy
+concrete_unlearning = [88.9, 89.2, 90.4, 89.0, 90.1, 91.3]  # 具体概念的 Unlearning Accuracy
+concrete_utility = [91.5, 90.3, 91.0, 88.4, 89.2, 87.5]  # 具体概念的 Utility Accuracy
 
 # 抽象概念的数据
-abstract_unlearning = [75, 70, 68, 72, 74, 78]  # 抽象概念的 Unlearning Accuracy
-abstract_utility = [80, 78, 75, 77, 79, 82]  # 抽象概念的 Utility Accuracy
+abstract_unlearning = [85.3, 84.5, 87.2, 86.5, 88.1, 88.0]  # 抽象概念的 Unlearning Accuracy
+abstract_utility = [83.8, 82.0, 81.2, 79.3, 80.2, 79.4]  # 抽象概念的 Utility Accuracy
 
 # 创建图形
-plt.figure(figsize=(10, 6))
+plt.figure(figsize=(12, 8))
 
 # 绘制具体概念的折线
-plt.plot(num_concepts, concrete_unlearning, label='Concrete Unlearning', linestyle='-', marker='o', color='blue')
-plt.plot(num_concepts, concrete_utility, label='Concrete Utility', linestyle='-', marker='s', color='green')
+plt.plot(num_concepts, concrete_unlearning, label='Concrete Task Unlearning Score', linestyle='-', marker='o', color='blue',linewidth=4, markersize=12)
+plt.plot(num_concepts, concrete_utility, label='Concrete Task Utility Score', linestyle='-', marker='s', color='green',linewidth=4, markersize=12)
 
 # 绘制抽象概念的折线
-plt.plot(num_concepts, abstract_unlearning, label='Abstract Unlearning', linestyle='--', marker='o', color='red')
-plt.plot(num_concepts, abstract_utility, label='Abstract Utility', linestyle='--', marker='s', color='orange')
+plt.plot(num_concepts, abstract_unlearning, label='Abstract Task Unlearning Score', linestyle='--', marker='o', color='red',linewidth=4, markersize=12)
+plt.plot(num_concepts, abstract_utility, label='Abstract Task Utility Score', linestyle='--', marker='s', color='orange',linewidth=4, markersize=12)
 
 # 设置图形属性
-plt.xlabel('Number of Concepts', fontsize=12)
-plt.ylabel('Accuracy (%)', fontsize=12)
-plt.title('Accuracy vs. Number of Concepts', fontsize=14)
-plt.xticks(num_concepts)
-plt.yticks(np.arange(0, 101, 10))  # 纵坐标从 0 到 100，步长为 10
+plt.xlabel('Number of Unlearning Concepts', fontsize=label_size)
+plt.ylabel('Scores (%)', fontsize=label_size)  # Unlearning or Utility 
+# plt.title('Accuracy vs. Number of Concepts', fontsize=14)
+plt.xticks(num_concepts, fontsize=tick_size)
+plt.yticks(np.arange(0, 101, 10), fontsize=tick_size)  # 纵坐标从 0 到 100，步长为 10
+plt.ylim(40, 100) 
 plt.grid(True, linestyle='--', alpha=0.6)
-plt.legend(fontsize=10)
+plt.legend(fontsize=legend_size)
 
 # 设置背景颜色
 plt.gca().set_facecolor('#f7f7f7')  # 淡淡的灰色背景

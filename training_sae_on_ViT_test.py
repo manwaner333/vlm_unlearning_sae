@@ -40,13 +40,13 @@ cfg = ViTSAERunnerConfig(
     class_token = True,  # True,
     image_width = 224,
     image_height = 224,
-    model_name = "llava-1.5-7b-hf",   # "llava-hf/llava-v1.6-vicuna-7b-hf",  # "openai/clip-vit-large-patch14",
+    model_name = "Llama-3.2-11B-Vision-Instruct",   # "llava-hf/llava-v1.6-vicuna-7b-hf",  # "openai/clip-vit-large-patch14",   "llava-1.5-7b-hf", meta-llama/Llama-3.2-11B-Vision-Instruct  llava-hf/llama3-llava-next-8b-hf
     module_name = "resid",
     block_layer = -2, # -2
     dataset_path = "evanarlian/imagenet_1k_resized_256",   # "./dataset/full.json",   # "evanarlian/imagenet_1k_resized_256",  full.json
     use_cached_activations = False,
     cached_activations_path = None,
-    d_in = 1024, # 4096,  # 1024,
+    d_in = 1024, # 4096,  # 1024, 1280
     
     # SAE Parameters
     expansion_factor = 32,  # 64,
@@ -56,7 +56,7 @@ cfg = ViTSAERunnerConfig(
     lr = 0.0004,
     l1_coefficient = 0.00008,
     lr_scheduler_name="constantwithwarmup",
-    batch_size = 5, # 1024,
+    batch_size = 10, # 1024,
     lr_warm_up_steps=500,
     total_training_tokens = 1000,   # 2621440,  # 20000, # 2_621_440,
     n_batches_in_store = 4, # 15,  这个值在config.py中用于生成store_size，这是模型中实际使用的数据量。

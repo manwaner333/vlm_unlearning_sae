@@ -285,9 +285,9 @@ def get_all_model_activations(model, images, conversations, cfg):
 original_model = False
 sae_model = False
 neuron_alighment = False
-scatter_plots = False
+scatter_plots = True
 sae_sparsity = False
-focus_features = True
+focus_features = False
 focus_images = False
 
 
@@ -483,16 +483,36 @@ if sae_sparsity:
     sparsity_tensor = torch.log10(sparsity_tensor)
     fig = xp.histogram(sparsity_tensor)
     
+    fig.update_traces(marker=dict(color="#4169E1"))
     
     fig.update_xaxes(
-        title_text='Log10(sparsity)',  # X-axis label
-        title_font_size=20,                   # X-axis label font size
-        tickfont_size=16                      # X-axis tick font size
+        title_text=r'$\LARGE \log_{10}(\text{FS})$',  # X-axis label
+        # title_font_size=30,                   # X-axis label font size
+        # tickfont_size=26,                      # X-axis tick font size
+        title_font=dict(size=28, color='black'),
+        tickfont=dict(size=26, color='black'),
+        # tickformat=".e"
+        showline=True,       # 显示 X 轴线
+        linewidth=1,         # 线宽
+        linecolor='black',    # 线颜色
+        mirror=True
     )
     fig.update_yaxes(
-        title_text='Count',               # Y-axis label
-        title_font_size=20,                   # Y-axis label font size
-        tickfont_size=16                      # Y-axis tick font size
+        title_text='Number of Features',               # Y-axis label
+        # title_font_size=30,                   # Y-axis label font size
+        # tickfont_size=26,
+        title_font=dict(size=28, color='black'),
+        tickfont=dict(size=26, color='black'),
+        showline=True,       # 显示 X 轴线
+        linewidth=1,         # 线宽
+        linecolor='black',    # 线颜色
+        mirror=True
+    )
+    
+    fig.update_layout(
+    # paper_bgcolor='lightgrey', 
+    # plot_bgcolor='white' 
+    plot_bgcolor='#f7f7f7' 
     )
 
     # Customize the legend (if applicable)
@@ -505,9 +525,14 @@ if sae_sparsity:
     #         bgcolor='rgba(255, 255, 255, 0.5)' # Legend background color (optional)
     #     )
     # )
-    fig.update_layout(showlegend=False)
+    
+    fig.update_layout(margin=dict(l=0, r=5, t=5, b=0))
+    fig.update_layout(showlegend=False, 
+                      legend=dict(font=dict(size=13)))
+    
+    
     # fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
-    fig.write_image("histogram_1.png", scale=2)
+    fig.write_image("histogram_update.png", scale=2)
     
     # sparsity_tensor[sparsity_tensor == -float('inf')] = torch.min(sparsity_tensor[sparsity_tensor != -float('inf')])
     
@@ -673,23 +698,51 @@ if scatter_plots:
         label_frequency[i] = (flattened_max_activating_image_label_indices==i).sum()
         
     fig = px.histogram(label_frequency)
-    fig.write_image("aaa333.png")
+    # fig.write_image("aaa333.png")
 
     fig = px.line(label_frequency)
-    fig.write_image("aaa444.png")
+    # fig.write_image("aaa444.png")
     
     ### 4
     sae_mean_acts_tensor = torch.log10(sae_mean_acts)
     fig = xp.histogram(sae_mean_acts_tensor)
+    fig.update_traces(marker=dict(color="#4169E1"))
+    
     fig.update_xaxes(
-        title_text='Log10(men activation value)',      # X-axis label
-        title_font_size=20,                   # X-axis label font size
-        tickfont_size=16                      # X-axis tick font size
+        title_text=r'$\LARGE \log_{10}(\text{FMAV})$',      # X-axis label
+        # title_font_size=32,                   # X-axis label font size
+        # tickfont_size=28                      # X-axis tick font size
+        title_font=dict(size=28, color='black'),
+        tickfont=dict(size=26, color='black'),
+        showline=True,       # 显示 X 轴线
+        linewidth=1,         # 线宽
+        linecolor='black',    # 线颜色
+        mirror=True
+        
     )
+    # fig.update_xaxes(
+    #     title={
+    #         'text': r'$\log_{10}(\text{FMAV})$',  # X 轴标题
+    #         'font': {'size': 32}                  # 标题字体大小
+    #     },
+    #     tickfont={'size': 28}                      # 刻度字体大小
+    # )
     fig.update_yaxes(
-        title_text='Count',                 # Y-axis label
-        title_font_size=20,                   # Y-axis label font size
-        tickfont_size=16                      # Y-axis tick font size
+        title_text='Number of Features',                 # Y-axis label
+        # title_font_size=32,                   # Y-axis label font size
+        # tickfont_size=28                      # Y-axis tick font size
+        title_font=dict(size=28, color='black'),
+        tickfont=dict(size=26, color='black'),
+        showline=True,       # 显示 X 轴线
+        linewidth=1,         # 线宽
+        linecolor='black',    # 线颜色
+        mirror=True
+    )
+    
+    fig.update_layout(
+        plot_bgcolor='#f7f7f7'
+        # paper_bgcolor='lightgrey', 
+        # plot_bgcolor='white'  
     )
     # Customize the legend (if applicable)
     # fig.update_layout(
@@ -701,54 +754,56 @@ if scatter_plots:
     #         bgcolor='rgba(255, 255, 255, 0.5)' # Legend background color (optional)
     #     )
     # )
-    fig.update_layout(showlegend=False)
-    fig.write_image("sae_mean_acts.png", scale=2)
+    
+    fig.update_layout(margin=dict(l=0, r=5, t=5, b=0))
+    fig.update_layout(showlegend=False, legend=dict(font=dict(size=13)))
+    fig.write_image("sae_mean_acts_update.png", scale=2)
     
 
 
     ### 5
-    # sae_path = f"checkpoints/0ns2guf8/final_sparse_autoencoder_llava-hf/llava-1.5-7b-hf_-2_resid_131072.pt"
-    # sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/11e422e9a6b886457af1f53b095fdbc401d68233/302592_sae_image_model_activations_7.pt"
-    sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/e44861c762f4a32084ac448f31cd7264800610df/2621440_sae_image_model_activations_7.pt"
-    loaded_object = torch.load(sae_path)
-    cfg = loaded_object['cfg']
-    state_dict = loaded_object['state_dict']
-    sparse_autoencoder = SparseAutoencoder(cfg)
-    sparse_autoencoder.load_state_dict(state_dict)
-    sparse_autoencoder.eval()
-    loader = ViTSparseAutoencoderSessionloader(cfg)
-    model = loader.get_model(cfg.model_name)
-    model.to(cfg.device)
-    dataset = load_dataset(cfg.dataset_path, split="train")
-    dataset = dataset.shuffle(seed = 1)
-    image = dataset[most_common_index]['image']
-    module_name = cfg.module_name
-    block_layer = cfg.block_layer
-    list_of_hook_locations = [(block_layer, module_name)]
+    # # sae_path = f"checkpoints/0ns2guf8/final_sparse_autoencoder_llava-hf/llava-1.5-7b-hf_-2_resid_131072.pt"
+    # # sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/11e422e9a6b886457af1f53b095fdbc401d68233/302592_sae_image_model_activations_7.pt"
+    # sae_path = "checkpoints/models--jiahuimbzuai--sae_64/snapshots/e44861c762f4a32084ac448f31cd7264800610df/2621440_sae_image_model_activations_7.pt"
+    # loaded_object = torch.load(sae_path)
+    # cfg = loaded_object['cfg']
+    # state_dict = loaded_object['state_dict']
+    # sparse_autoencoder = SparseAutoencoder(cfg)
+    # sparse_autoencoder.load_state_dict(state_dict)
+    # sparse_autoencoder.eval()
+    # loader = ViTSparseAutoencoderSessionloader(cfg)
+    # model = loader.get_model(cfg.model_name)
+    # model.to(cfg.device)
+    # dataset = load_dataset(cfg.dataset_path, split="train")
+    # dataset = dataset.shuffle(seed = 1)
+    # image = dataset[most_common_index]['image']
+    # module_name = cfg.module_name
+    # block_layer = cfg.block_layer
+    # list_of_hook_locations = [(block_layer, module_name)]
     
-    conversation = [
-            {
-            "role": "user",
-            "content": [
-                {"type": "text", "text": "What is shown in this image?"}, 
-                {"type": "image"},
-                ],
-            },
-        ] 
-    prompt = model.processor.apply_chat_template(conversation, add_generation_prompt=True)
-    inputs = model.processor(images=[image], text = [prompt], return_tensors="pt", padding = True).to(cfg.device)
-    model_activations = model.run_with_cache(
-        list_of_hook_locations,
-        **inputs,
-    )[1][(block_layer, module_name)]
-    model_activations = model_activations[:,-7,:]
-    _, feature_acts, _, _, _, _ = sparse_autoencoder(model_activations)
-    feature_acts = feature_acts.to('cpu')
-    print(f'Most common image has index: {most_common_index}')
-    print(f'Number of sae features that fired: {(feature_acts>0).sum()}')
-    print(f'Percentage of neurons that fired: {(feature_acts>0).sum()/(expansion_factor*1024):.2%}')
-    mean_log_sparsity = torch.log10(sparsity[feature_acts.squeeze()>0]).mean()
-    print(f'Mean log 10 sparsity of those that fired: {mean_log_sparsity}')
+    # conversation = [
+    #         {
+    #         "role": "user",
+    #         "content": [
+    #             {"type": "text", "text": "What is shown in this image?"}, 
+    #             {"type": "image"},
+    #             ],
+    #         },
+    #     ] 
+    # prompt = model.processor.apply_chat_template(conversation, add_generation_prompt=True)
+    # inputs = model.processor(images=[image], text = [prompt], return_tensors="pt", padding = True).to(cfg.device)
+    # model_activations = model.run_with_cache(
+    #     list_of_hook_locations,
+    #     **inputs,
+    # )[1][(block_layer, module_name)]
+    # model_activations = model_activations[:,-7,:]
+    # _, feature_acts, _, _, _, _ = sparse_autoencoder(model_activations)
+    # feature_acts = feature_acts.to('cpu')
+    # print(f'Most common image has index: {most_common_index}')
+    # print(f'Number of sae features that fired: {(feature_acts>0).sum()}')
+    # print(f'Percentage of neurons that fired: {(feature_acts>0).sum()/(expansion_factor*1024):.2%}')
+    # mean_log_sparsity = torch.log10(sparsity[feature_acts.squeeze()>0]).mean()
+    # print(f'Mean log 10 sparsity of those that fired: {mean_log_sparsity}')
         
 
 

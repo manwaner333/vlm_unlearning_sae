@@ -235,7 +235,6 @@ class ViTActivationsStore:
         # inputs = self.model.processor(image_batches, batch_of_prompts, add_special_tokens=False, return_tensors="pt").to(self.cfg.device)  # for meta-llama/Llama-3.2-11B-Vision-Instruct
         inputs = self.model.processor(images=image_batches, text=batch_of_prompts, padding=True, return_tensors="pt").to(self.cfg.device)  # for llava-hf/llama3-llava-next-8b-hf
 
-        
         print((inputs.input_ids != self.model.processor.tokenizer.pad_token_id).sum(dim=1))
         
         # output = self.model.model.generate(**inputs, max_new_tokens=100)

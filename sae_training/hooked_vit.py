@@ -41,8 +41,8 @@ class Hook():
   
   
   def get_attr_path(self, block_layer: int, module_name: str) -> str:
-    attr_path = f'vision_model.transformer.layers[{block_layer}]'   # "meta-llama/Llama-3.2-11B-Vision-Instruct
-    # attr_path = f'vision_tower.vision_model.encoder.layers[{block_layer}]'  # "llava-1.5-7b-hf"
+    # attr_path = f'vision_model.transformer.layers[{block_layer}]'   # "meta-llama/Llama-3.2-11B-Vision-Instruct
+    attr_path = f'vision_tower.vision_model.encoder.layers[{block_layer}]'  # "llava-1.5-7b-hf"
     # attr_path = f'language_model.model.layers[{block_layer}]'
     attr_path += self.path_dict[module_name]
     return attr_path
@@ -96,12 +96,12 @@ class HookedVisionTransformer():
     # processor.image_processor.size = {"height": 336, "width": 336}
     
     # llava-hf/llava-1.5-7b-hf
-    # processor = AutoProcessor.from_pretrained("llava-hf/llava-1.5-7b-hf")
-    # model = LlavaForConditionalGeneration.from_pretrained("llava-hf/llava-1.5-7b-hf", attn_implementation="flash_attention_2", torch_dtype=torch.float16)
+    processor = AutoProcessor.from_pretrained("llava-hf/llava-1.5-7b-hf")
+    model = LlavaForConditionalGeneration.from_pretrained("llava-hf/llava-1.5-7b-hf", attn_implementation="flash_attention_2", torch_dtype=torch.float16)
     
     # meta-llama/Llama-3.2-11B-Vision-Instruct
-    processor = AutoProcessor.from_pretrained("meta-llama/Llama-3.2-11B-Vision-Instruct")
-    model = MllamaForConditionalGeneration.from_pretrained("meta-llama/Llama-3.2-11B-Vision-Instruct", torch_dtype=torch.bfloat16) # , device_map="auto"
+    # processor = AutoProcessor.from_pretrained("meta-llama/Llama-3.2-11B-Vision-Instruct")
+    # model = MllamaForConditionalGeneration.from_pretrained("meta-llama/Llama-3.2-11B-Vision-Instruct", torch_dtype=torch.bfloat16)
     
     # llava-hf/llama3-llava-next-8b-hf
     # processor = LlavaNextProcessor.from_pretrained("llava-hf/llama3-llava-next-8b-hf")
