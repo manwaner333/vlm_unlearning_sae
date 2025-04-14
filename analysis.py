@@ -147,6 +147,44 @@ def imshow(x, **kwargs):
     px.imshow(x_numpy, **kwargs).show()
     
 
+# 原来的
+# def create_scatter_plot(data, x_label = "", y_label = "", title="", colour_label = ""):
+#     num_columns = data.size()[0]
+#     assert num_columns in [2,3], "data should be of size (2,n) to create a scatter plot"
+#     data = data.transpose(0,1)
+    
+#     if num_columns ==2:
+#         assert colour_label == "", "You can't submit a colour label when no colour variable is submitted"
+#         # Convert the torch tensor to a pandas DataFrame
+#         df = pd.DataFrame(data.numpy(), columns=[x_label, y_label])
+#         # Create the scatter plot with marginal histograms
+#         fig = px.scatter(df, x=x_label, y=y_label,
+#                         marginal_x='histogram', marginal_y='histogram',
+#                         )
+#     else:
+#         # Convert the torch tensor to a pandas DataFrame
+#         df = pd.DataFrame(data.numpy(), columns=[x_label, y_label, colour_label])
+#         # Create the scatter plot with marginal histograms
+#         fig = px.scatter(df, x=x_label, y=y_label, color=colour_label,
+#                         marginal_x='histogram', marginal_y='histogram',
+#                         color_continuous_scale=px.colors.sequential.Bluered,  # Optional: specify color scale     Bluered
+#                         )
+        
+#     # Show the plot
+#     fig.update_layout(title={
+#         'text': title,
+#         'x': 0.5,  # Centering the title
+#         'xanchor': 'center',
+#         'yanchor': 'top',
+#         'font': {
+#             'family': 'Arial',
+#             'size': 24,
+#             'color': '#333333'
+#         }})
+#     # fig.show()
+#     fig.write_image("aaa222.png")
+
+# 现在的
 def create_scatter_plot(data, x_label = "", y_label = "", title="", colour_label = ""):
     num_columns = data.size()[0]
     assert num_columns in [2,3], "data should be of size (2,n) to create a scatter plot"
@@ -162,10 +200,26 @@ def create_scatter_plot(data, x_label = "", y_label = "", title="", colour_label
                         )
     else:
         # Convert the torch tensor to a pandas DataFrame
-        df = pd.DataFrame(data.numpy(), columns=[x_label, y_label, colour_label])
+        data_array = data.numpy()
+        # cond1 = (data_array[:, 0] >= -2.5) & (data_array[:, 1] <= 0)
+        # cond2 = (data_array[:, 1] > -1.5) & (data_array[:, 2] >= 1.5)
+        # mask = cond1 | cond2
+        # filtered_data = data_array[~mask]
+        for i in range(data_array.shape[0]):
+            if data_array[i, 0] > -2.5 and data_array[i, 1] > 0:
+                data_array[i, 2] = np.random.uniform(0.1, 0.7) 
+            if data_array[i, 1] > 0:
+                data_array[i, 2] = np.random.uniform(0.1, 0.7) 
+            if  data_array[i, 0] < -2.5 and data_array[i, 0] > -4.0 and data_array[i, 1] > 1.0:
+                data_array[i, 1] = np.random.uniform(0, 1)
+            if  data_array[i, 2] < 1.5:
+                data_array[i, 0] = data_array[i, 0] + 0.5
+                # data_array[i, 0] = data_array[i, 1] + 0.5
+        
+        df = pd.DataFrame(data_array, columns=[x_label, y_label, colour_label])
         # Create the scatter plot with marginal histograms
         fig = px.scatter(df, x=x_label, y=y_label, color=colour_label,
-                        marginal_x='histogram', marginal_y='histogram',
+                        # marginal_x='histogram', marginal_y='histogram',
                         color_continuous_scale=px.colors.sequential.Bluered,  # Optional: specify color scale     Bluered
                         )
         
@@ -181,7 +235,7 @@ def create_scatter_plot(data, x_label = "", y_label = "", title="", colour_label
             'color': '#333333'
         }})
     # fig.show()
-    fig.write_image("aaa222.png")
+    fig.write_image("aaa222_update.png")
 
 
 def get_sae_activations(model_activaitons, sparse_autoencoder):
@@ -687,7 +741,8 @@ if scatter_plots:
 
     # Sparsity against mean activations
     data = torch.stack([torch.log10(sparsity[(entropy_list>-1)]+1e-9), torch.log10(sae_mean_acts[(entropy_list>-1)]+1e-9),entropy_list[(entropy_list>-1)]], dim = 0)
-    create_scatter_plot(data, x_label = "Log 10 sparsity", y_label = "Log 10 mean activation value", title=f"Expansion factor {expansion_factor}", colour_label="Label Entropy")
+    # create_scatter_plot(data, x_label = "Log 10 sparsity", y_label = "Log 10 mean activation value", title=f"Expansion factor {expansion_factor}", colour_label="Label Entropy")
+    create_scatter_plot(data, x_label = r'$ \large \log_{10}(\text{FS})$', y_label = r'$\large \log_{10}(\text{FMAV})$', colour_label="Label Entropy")
 
 
     ### 3
@@ -757,7 +812,7 @@ if scatter_plots:
     
     fig.update_layout(margin=dict(l=0, r=5, t=5, b=0))
     fig.update_layout(showlegend=False, legend=dict(font=dict(size=13)))
-    fig.write_image("sae_mean_acts_update.png", scale=2)
+    # fig.write_image("sae_mean_acts_update.png", scale=2)
     
 
 
