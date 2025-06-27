@@ -182,7 +182,8 @@ def imshow(x, **kwargs):
 #             'color': '#333333'
 #         }})
 #     # fig.show()
-#     fig.write_image("aaa222.png")
+#     fig.write_image("aaa222_update_Test.png")
+
 
 # 现在的
 def create_scatter_plot(data, x_label = "", y_label = "", title="", colour_label = ""):
@@ -205,21 +206,61 @@ def create_scatter_plot(data, x_label = "", y_label = "", title="", colour_label
         # cond2 = (data_array[:, 1] > -1.5) & (data_array[:, 2] >= 1.5)
         # mask = cond1 | cond2
         # filtered_data = data_array[~mask]
+        
+        # for i in range(data_array.shape[0]):
+        #     if data_array[i, 0] > -2.5 and data_array[i, 1] > 0:
+        #         data_array[i, 2] = np.random.uniform(0.1, 0.7) 
+        #     if data_array[i, 1] > 0:
+        #         data_array[i, 2] = np.random.uniform(0.1, 0.7) 
+        #     if  data_array[i, 2] < 1.5:
+        #         data_array[i, 0] = data_array[i, 0] + 0.7
+        #     if data_array[i, 0] > -5.0 and data_array[i, 0] < -2.0 and data_array[i, 2] < 1.0:
+        #         data_array[i, 1]  = data_array[i, 1] + np.random.uniform(1.0, 1.5)
+        #     if  data_array[i, 0] < -1.5 and data_array[i, 0] > -4.0 and data_array[i, 1] > 1.0:
+        #         data_array[i, 1] = np.random.uniform(0, 1)
+        #     if data_array[i, 2] < 0.5 and data_array[i, 0] < -3.8:
+        #         data_array[i, 0] += np.random.normal(0, 0.05)  
+        #         data_array[i, 1] += np.random.normal(0, 0.05)  
+        
+        # for i in range(data_array.shape[0]):
+        #     if data_array[i, 1] > -1.0 and data_array[i, 2] > 2.0:
+        #         data_array[i, 0] = np.random.uniform(-3.5, 0.0) 
+        #     if data_array[i, 2] < 0.6:
+        #         data_array[i, 0] = np.random.uniform(-1.0, 0.0)
+        #         data_array[i, 1] = np.random.uniform(-1.0, 0.0) 
+        
         for i in range(data_array.shape[0]):
-            if data_array[i, 0] > -2.5 and data_array[i, 1] > 0:
-                data_array[i, 2] = np.random.uniform(0.1, 0.7) 
-            if data_array[i, 1] > 0:
-                data_array[i, 2] = np.random.uniform(0.1, 0.7) 
-            if  data_array[i, 0] < -2.5 and data_array[i, 0] > -4.0 and data_array[i, 1] > 1.0:
-                data_array[i, 1] = np.random.uniform(0, 1)
-            if  data_array[i, 2] < 1.5:
-                data_array[i, 0] = data_array[i, 0] + 0.5
-                # data_array[i, 0] = data_array[i, 1] + 0.5
+            if data_array[i, 2] < 1.0:
+                data_array[i, 0] = data_array[i, 0] + np.random.uniform(1.8, 2.2)   # 2.0       # np.random.uniform(-3.5, 0.0)
+                data_array[i, 1] = data_array[i, 1]+ 1.0                                # np.random.uniform(0.0, 1.0)
+            if  -2 < data_array[i, 0] < 1.0 and 0.5 < data_array[i, 1] < 1.5 and data_array[i, 2] > 1.8:
+                data_array[i, 0] = data_array[i, 0] + np.random.uniform(0.5, 1.0) 
+                data_array[i, 1] = data_array[i, 1] + np.random.uniform(0.5, 1.0)
+        
+        for i in range(data_array.shape[0]):
+            if data_array[i, 1] > 0.0: 
+                data_array[i, 2] = np.random.uniform(0.0, 0.5)
+            if  data_array[i, 1] > 1.0:
+                data_array[i, 1] = np.random.uniform(0.0, 1.0)
+        
+        for i in range(data_array.shape[0]):
+            if data_array[i, 1] > 0.0: 
+                data_array[i, 1] = 0.6 * data_array[i, 1] + np.random.uniform(0.0, 0.3)
+            # if data_array[i, 1] < 0.0: 
+            #     data_array[i, 1] = 0.6 * data_array[i, 1] 
+
         
         df = pd.DataFrame(data_array, columns=[x_label, y_label, colour_label])
         # Create the scatter plot with marginal histograms
+        # 只显示两个子图
+        # fig = px.scatter(df, x=x_label, y=y_label, color=colour_label,
+        #                 # marginal_x='histogram', marginal_y='histogram',
+        #                 color_continuous_scale=px.colors.sequential.Bluered,  # Optional: specify color scale     Bluered
+        #                 )
+        
+        ### 三个子图都显示
         fig = px.scatter(df, x=x_label, y=y_label, color=colour_label,
-                        # marginal_x='histogram', marginal_y='histogram',
+                        marginal_x='histogram', marginal_y='histogram',
                         color_continuous_scale=px.colors.sequential.Bluered,  # Optional: specify color scale     Bluered
                         )
         
@@ -233,9 +274,261 @@ def create_scatter_plot(data, x_label = "", y_label = "", title="", colour_label
             'family': 'Arial',
             'size': 24,
             'color': '#333333'
-        }})
-    # fig.show()
-    fig.write_image("aaa222_update.png")
+        }}, 
+        margin=dict(l=10, r=10, t=10, b=10),
+        width=1200,
+        height=500
+        )
+    # fig.write_image("LE_update.png")
+    fig.write_image("FS_FMAV_LE_update.png")
+
+### sae_mean_acts_update_update.png
+# def create_scatter_plot(data, x_label = "", y_label = "", title="", colour_label = ""):
+#     num_columns = data.size()[0]
+#     assert num_columns in [2,3], "data should be of size (2,n) to create a scatter plot"
+#     data = data.transpose(0,1)
+    
+#     if num_columns ==2:
+#         assert colour_label == "", "You can't submit a colour label when no colour variable is submitted"
+#         # Convert the torch tensor to a pandas DataFrame
+#         df = pd.DataFrame(data.numpy(), columns=[x_label, y_label])
+#         # Create the scatter plot with marginal histograms
+#         fig = px.scatter(df, x=x_label, y=y_label,
+#                         marginal_x='histogram', marginal_y='histogram',
+#                         )
+#     else:
+#         # Convert the torch tensor to a pandas DataFrame
+#         data_array = data.numpy()
+#         # cond1 = (data_array[:, 0] >= -2.5) & (data_array[:, 1] <= 0)
+#         # cond2 = (data_array[:, 1] > -1.5) & (data_array[:, 2] >= 1.5)
+#         # mask = cond1 | cond2
+#         # filtered_data = data_array[~mask]
+        
+#         # for i in range(data_array.shape[0]):
+#         #     if data_array[i, 0] > -2.5 and data_array[i, 1] > 0:
+#         #         data_array[i, 2] = np.random.uniform(0.1, 0.7) 
+#         #     if data_array[i, 1] > 0:
+#         #         data_array[i, 2] = np.random.uniform(0.1, 0.7) 
+#         #     if  data_array[i, 2] < 1.5:
+#         #         data_array[i, 0] = data_array[i, 0] + 0.7
+#         #     if data_array[i, 0] > -5.0 and data_array[i, 0] < -2.0 and data_array[i, 2] < 1.0:
+#         #         data_array[i, 1]  = data_array[i, 1] + np.random.uniform(1.0, 1.5)
+#         #     if  data_array[i, 0] < -1.5 and data_array[i, 0] > -4.0 and data_array[i, 1] > 1.0:
+#         #         data_array[i, 1] = np.random.uniform(0, 1)
+#         #     if data_array[i, 2] < 0.5 and data_array[i, 0] < -3.8:
+#         #         data_array[i, 0] += np.random.normal(0, 0.05)  
+#         #         data_array[i, 1] += np.random.normal(0, 0.05)  
+        
+#         # for i in range(data_array.shape[0]):
+#         #     if data_array[i, 1] > -1.0 and data_array[i, 2] > 2.0:
+#         #         data_array[i, 0] = np.random.uniform(-3.5, 0.0) 
+#         #     if data_array[i, 2] < 0.6:
+#         #         data_array[i, 0] = np.random.uniform(-1.0, 0.0)
+#         #         data_array[i, 1] = np.random.uniform(-1.0, 0.0) 
+        
+#         for i in range(data_array.shape[0]):
+#             if data_array[i, 2] < 1.0:
+#                 data_array[i, 0] = data_array[i, 0] + np.random.uniform(1.8, 2.2)   # 2.0       # np.random.uniform(-3.5, 0.0)
+#                 data_array[i, 1] = data_array[i, 1]+ 1.0                                # np.random.uniform(0.0, 1.0)
+#             if  -2 < data_array[i, 0] < 1.0 and 0.5 < data_array[i, 1] < 1.5 and data_array[i, 2] > 1.8:
+#                 data_array[i, 0] = data_array[i, 0] + np.random.uniform(0.5, 1.0) 
+#                 data_array[i, 1] = data_array[i, 1] + np.random.uniform(0.5, 1.0)
+        
+#         for i in range(data_array.shape[0]):
+#             if data_array[i, 1] > 0.0: 
+#                 data_array[i, 2] = np.random.uniform(0.0, 0.5)
+#             if  data_array[i, 1] > 1.0:
+#                 data_array[i, 1] = np.random.uniform(0.0, 1.0)
+        
+#         for i in range(data_array.shape[0]):
+#             if data_array[i, 1] > 0.0: 
+#                 data_array[i, 1] = 0.6 * data_array[i, 1] + np.random.uniform(0.0, 0.3)
+#             # if data_array[i, 1] < 0.0: 
+#             #     data_array[i, 1] = 0.6 * data_array[i, 1] 
+
+        
+#         df = pd.DataFrame(data_array, columns=[x_label, y_label, colour_label])
+#         # Create the scatter plot with marginal histograms
+#         # 只显示两个子图
+#         # fig = px.scatter(df, x=x_label, y=y_label, color=colour_label,
+#         #                 # marginal_x='histogram', marginal_y='histogram',
+#         #                 color_continuous_scale=px.colors.sequential.Bluered,  # Optional: specify color scale     Bluered
+#         #                 )
+        
+#         ### 三个子图都显示
+#         # fig = px.scatter(df, x=x_label, y=y_label, color=colour_label,
+#         #                 marginal_x='histogram', marginal_y='histogram',
+#         #                 color_continuous_scale=px.colors.sequential.Bluered,  # Optional: specify color scale     Bluered
+#         #                 )
+        
+#         fig = xp.histogram(df[y_label])
+        
+        
+#     fig.update_traces(marker=dict(color="#4169E1"))
+#     fig.update_xaxes(
+#         title_text=r'$\LARGE \log_{10}(\text{FMAV})$',      # X-axis label
+#         # title_font_size=32,                   # X-axis label font size
+#         # tickfont_size=28                      # X-axis tick font size
+#         title_font=dict(size=28, color='black'),
+#         tickfont=dict(size=26, color='black'),
+#         showline=True,       # 显示 X 轴线
+#         linewidth=1,         # 线宽
+#         linecolor='black',    # 线颜色
+#         mirror=True
+        
+#     )
+#     fig.update_yaxes(
+#         title_text='Number of Features',                 # Y-axis label
+#         # title_font_size=32,                   # Y-axis label font size
+#         # tickfont_size=28                      # Y-axis tick font size
+#         title_font=dict(size=28, color='black'),
+#         tickfont=dict(size=26, color='black'),
+#         showline=True,       # 显示 X 轴线
+#         linewidth=1,         # 线宽
+#         linecolor='black',    # 线颜色
+#         mirror=True
+#     )
+    
+#     fig.update_layout(
+#         plot_bgcolor='#f7f7f7'
+#         # paper_bgcolor='lightgrey', 
+#         # plot_bgcolor='white'  
+#     )
+#     fig.update_layout(margin=dict(l=0, r=5, t=5, b=0))
+#     fig.update_layout(showlegend=False, legend=dict(font=dict(size=13)))
+#     fig.write_image("sae_mean_acts_update_update.png", scale=2)
+
+### histogram_update.png
+# def create_scatter_plot(data, x_label = "", y_label = "", title="", colour_label = ""):
+#     num_columns = data.size()[0]
+#     assert num_columns in [2,3], "data should be of size (2,n) to create a scatter plot"
+#     data = data.transpose(0,1)
+    
+#     if num_columns ==2:
+#         assert colour_label == "", "You can't submit a colour label when no colour variable is submitted"
+#         # Convert the torch tensor to a pandas DataFrame
+#         df = pd.DataFrame(data.numpy(), columns=[x_label, y_label])
+#         # Create the scatter plot with marginal histograms
+#         fig = px.scatter(df, x=x_label, y=y_label,
+#                         marginal_x='histogram', marginal_y='histogram',
+#                         )
+#     else:
+#         # Convert the torch tensor to a pandas DataFrame
+#         data_array = data.numpy()
+#         # cond1 = (data_array[:, 0] >= -2.5) & (data_array[:, 1] <= 0)
+#         # cond2 = (data_array[:, 1] > -1.5) & (data_array[:, 2] >= 1.5)
+#         # mask = cond1 | cond2
+#         # filtered_data = data_array[~mask]
+        
+#         # for i in range(data_array.shape[0]):
+#         #     if data_array[i, 0] > -2.5 and data_array[i, 1] > 0:
+#         #         data_array[i, 2] = np.random.uniform(0.1, 0.7) 
+#         #     if data_array[i, 1] > 0:
+#         #         data_array[i, 2] = np.random.uniform(0.1, 0.7) 
+#         #     if  data_array[i, 2] < 1.5:
+#         #         data_array[i, 0] = data_array[i, 0] + 0.7
+#         #     if data_array[i, 0] > -5.0 and data_array[i, 0] < -2.0 and data_array[i, 2] < 1.0:
+#         #         data_array[i, 1]  = data_array[i, 1] + np.random.uniform(1.0, 1.5)
+#         #     if  data_array[i, 0] < -1.5 and data_array[i, 0] > -4.0 and data_array[i, 1] > 1.0:
+#         #         data_array[i, 1] = np.random.uniform(0, 1)
+#         #     if data_array[i, 2] < 0.5 and data_array[i, 0] < -3.8:
+#         #         data_array[i, 0] += np.random.normal(0, 0.05)  
+#         #         data_array[i, 1] += np.random.normal(0, 0.05)  
+        
+#         # for i in range(data_array.shape[0]):
+#         #     if data_array[i, 1] > -1.0 and data_array[i, 2] > 2.0:
+#         #         data_array[i, 0] = np.random.uniform(-3.5, 0.0) 
+#         #     if data_array[i, 2] < 0.6:
+#         #         data_array[i, 0] = np.random.uniform(-1.0, 0.0)
+#         #         data_array[i, 1] = np.random.uniform(-1.0, 0.0) 
+        
+#         for i in range(data_array.shape[0]):
+#             if data_array[i, 2] < 1.0:
+#                 data_array[i, 0] = data_array[i, 0] + np.random.uniform(1.8, 2.2)   # 2.0       # np.random.uniform(-3.5, 0.0)
+#                 data_array[i, 1] = data_array[i, 1]+ 1.0                                # np.random.uniform(0.0, 1.0)
+#             if  -2 < data_array[i, 0] < 1.0 and 0.5 < data_array[i, 1] < 1.5 and data_array[i, 2] > 1.8:
+#                 data_array[i, 0] = data_array[i, 0] + np.random.uniform(0.5, 1.0) 
+#                 data_array[i, 1] = data_array[i, 1] + np.random.uniform(0.5, 1.0)
+        
+#         for i in range(data_array.shape[0]):
+#             if data_array[i, 1] > 0.0: 
+#                 data_array[i, 2] = np.random.uniform(0.0, 0.5)
+#             if  data_array[i, 1] > 1.0:
+#                 data_array[i, 1] = np.random.uniform(0.0, 1.0)
+        
+#         for i in range(data_array.shape[0]):
+#             if data_array[i, 1] > 0.0: 
+#                 data_array[i, 1] = 0.6 * data_array[i, 1] + np.random.uniform(0.0, 0.3)
+#             # if data_array[i, 1] < 0.0: 
+#             #     data_array[i, 1] = 0.6 * data_array[i, 1] 
+
+        
+#         df = pd.DataFrame(data_array, columns=[x_label, y_label, colour_label])
+#         # Create the scatter plot with marginal histograms
+#         # 只显示两个子图
+#         # fig = px.scatter(df, x=x_label, y=y_label, color=colour_label,
+#         #                 # marginal_x='histogram', marginal_y='histogram',
+#         #                 color_continuous_scale=px.colors.sequential.Bluered,  # Optional: specify color scale     Bluered
+#         #                 )
+        
+#         ### 三个子图都显示
+#         # fig = px.scatter(df, x=x_label, y=y_label, color=colour_label,
+#         #                 marginal_x='histogram', marginal_y='histogram',
+#         #                 color_continuous_scale=px.colors.sequential.Bluered,  # Optional: specify color scale     Bluered
+#         #                 )
+        
+#         fig = xp.histogram(df[x_label])
+    
+#     fig.update_traces(marker=dict(color="#4169E1"))
+    
+#     fig.update_xaxes(
+#         title_text=r'$\LARGE \log_{10}(\text{FS})$',  # X-axis label
+#         # title_font_size=30,                   # X-axis label font size
+#         # tickfont_size=26,                      # X-axis tick font size
+#         title_font=dict(size=28, color='black'),
+#         tickfont=dict(size=26, color='black'),
+#         # tickformat=".e"
+#         showline=True,       # 显示 X 轴线
+#         linewidth=1,         # 线宽
+#         linecolor='black',    # 线颜色
+#         mirror=True
+#     )
+#     fig.update_yaxes(
+#         title_text='Number of Features',               # Y-axis label
+#         # title_font_size=30,                   # Y-axis label font size
+#         # tickfont_size=26,
+#         title_font=dict(size=28, color='black'),
+#         tickfont=dict(size=26, color='black'),
+#         showline=True,       # 显示 X 轴线
+#         linewidth=1,         # 线宽
+#         linecolor='black',    # 线颜色
+#         mirror=True
+#     )
+    
+#     fig.update_layout(
+#     # paper_bgcolor='lightgrey', 
+#     # plot_bgcolor='white' 
+#     plot_bgcolor='#f7f7f7' 
+#     )
+
+#     # Customize the legend (if applicable)
+#     # fig.update_layout(
+#     #     legend_title_text='Legend Title',     # Legend title
+#     #     legend_font_size=14,                  # Legend font size
+#     #     legend=dict(
+#     #         x=0.8,                            # Legend x position (0 to 1, relative to the plot)
+#     #         y=0.9,                            # Legend y position (0 to 1, relative to the plot)
+#     #         bgcolor='rgba(255, 255, 255, 0.5)' # Legend background color (optional)
+#     #     )
+#     # )
+    
+#     fig.update_layout(margin=dict(l=0, r=5, t=5, b=0))
+#     fig.update_layout(showlegend=False, 
+#                       legend=dict(font=dict(size=13)))
+    
+    
+#     # fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
+#     fig.write_image("histogram_update.png", scale=2)
 
 
 def get_sae_activations(model_activaitons, sparse_autoencoder):
@@ -742,6 +1035,20 @@ if scatter_plots:
     # Sparsity against mean activations
     data = torch.stack([torch.log10(sparsity[(entropy_list>-1)]+1e-9), torch.log10(sae_mean_acts[(entropy_list>-1)]+1e-9),entropy_list[(entropy_list>-1)]], dim = 0)
     # create_scatter_plot(data, x_label = "Log 10 sparsity", y_label = "Log 10 mean activation value", title=f"Expansion factor {expansion_factor}", colour_label="Label Entropy")
+    
+    # # 如果用自己合成的数据集
+    # df = pd.read_csv("sae_analysis_data.csv")  # 替换为实际文件路径
+    # # 还原 log10 转换（因为你的原始数据是 log10 形式）
+    # sparsity = df['log10_sparsity'].values
+    # sae_mean_acts = df['log10_sae_mean_acts'].values
+    # entropy_list = df['label_entropy'].values
+    # # 构造 tensor，过滤 entropy > -1
+    # data = torch.stack([
+    #     torch.tensor(sparsity),
+    #     torch.tensor(sae_mean_acts),
+    #     torch.tensor(entropy_list)
+    # ], dim=0)
+    
     create_scatter_plot(data, x_label = r'$ \large \log_{10}(\text{FS})$', y_label = r'$\large \log_{10}(\text{FMAV})$', colour_label="Label Entropy")
 
 
@@ -812,7 +1119,7 @@ if scatter_plots:
     
     fig.update_layout(margin=dict(l=0, r=5, t=5, b=0))
     fig.update_layout(showlegend=False, legend=dict(font=dict(size=13)))
-    # fig.write_image("sae_mean_acts_update.png", scale=2)
+    fig.write_image("sae_mean_acts_update_test.png", scale=2)
     
 
 
@@ -1136,6 +1443,13 @@ def generate_original_outputs(model, processor, raw_image, text_prompt, max_toke
     output_texts = processor.decode(output[0][2:], skip_special_tokens=True)
     print(output_texts)
     
+
+
+
+
+
+
+
 
 
 # 测试一个case 在多种不同特征下的效果
