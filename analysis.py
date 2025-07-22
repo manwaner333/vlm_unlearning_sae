@@ -632,10 +632,11 @@ def get_all_model_activations(model, images, conversations, cfg):
 original_model = False
 sae_model = False
 neuron_alighment = False
-scatter_plots = True
+scatter_plots = False
 sae_sparsity = False
 focus_features = False
 focus_images = False
+evaluate_llm_sae = True
 
 
 ### specific case study---sparse autoencoder model
@@ -1329,7 +1330,105 @@ if focus_images:
     
 
 
+if evaluate_llm_sae:
+    # Example x-values: L0 sparsity (same for all methods)
+    x = np.array([20, 40, 80, 160, 320])
 
+    # Placeholder data (you should replace with actual values)
+    data_dict = {
+        'ReLU': {
+            'pve': [0.68, 0.70, 0.73, 0.75, 0.78],
+            'ce': [3.19, 3.15, 3.12, 3.08, 3.04],
+            'marker': 's',
+            'color': '#e3a869'
+        },
+        # 'JumpReLU': {
+        #     'pve': [0.70, 0.73, 0.76, 0.80, 0.85],
+        #     'ce': [3.10, 3.05, 3.01, 2.99, 2.96],
+        #     'marker': 'X',
+        #     'color': '#67d3c3'
+        # },
+        'TopK': {
+            'pve': [0.69, 0.72, 0.75, 0.78, 0.83],
+            'ce': [3.15, 3.08, 3.04, 3.00, 2.97],
+            'marker': '^',
+            'color': '#7fc97f'
+        },
+        # 'Batch TopK': {
+        #     'pve': [0.72, 0.76, 0.79, 0.82, 0.85],
+        #     'ce': [3.12, 3.06, 3.02, 2.99, 2.96],
+        #     'marker': 'o',
+        #     'color': '#729ece'
+        # },
+        # 'ReLU with p-Annealing': {
+        #     'pve': [0.69, 0.71, 0.74, 0.77, 0.80],
+        #     'ce': [3.13, 3.07, 3.03, 3.00, 2.97],
+        #     'marker': 'P',
+        #     'color': '#666666'
+        # },
+        'Gated': {
+            'pve': [0.71, 0.74, 0.78, 0.82, 0.85],
+            'ce': [3.17, 3.09, 3.03, 3.00, 2.97],
+            'marker': '<',
+            'color': '#b2df8a'
+        },
+        'Matryoshka Batch TopK': {
+            'pve': [0.66, 0.70, 0.75, 0.80, 0.85],
+            'ce': [3.19, 3.08, 3.01, 2.98, 2.96],
+            'marker': 'd',
+            'color': '#d62728'
+        },
+    }
+
+    # PCA Baseline values
+    pca_baseline_pve = 1.0
+    pca_baseline_ce = 2.94
+
+    # Start plotting
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
+
+    for name, val in data_dict.items():
+        ax1.plot(x, val['pve'], marker=val['marker'], label=name, color=val['color'], linewidth=1)
+        ax2.plot(x, val['ce'], marker=val['marker'], label=name, color=val['color'], linewidth=1)
+
+    # PCA baseline dashed lines
+    ax1.axhline(y=pca_baseline_pve, linestyle='--', color='red', linewidth=2, label='PCA Baseline')
+    ax2.axhline(y=pca_baseline_ce, linestyle='--', color='red', linewidth=2)
+
+    # Axis settings
+    ax1.set_xlabel(r"L0 (Lower is sparser)")
+    ax1.set_ylabel("Percentage Variance Explained")
+    ax1.set_title("")
+
+    ax2.set_xlabel(r"L0 (Lower is sparser)")
+    ax2.set_ylabel("CE Loss with SAE")
+    ax2.set_title("")
+
+    # Flip x-axis
+    # ax1.invert_xaxis()
+    # ax2.invert_xaxis()
+
+    # Adjust legends
+    # fig.legend(loc='center right', frameon=False)
+    # fig.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15), ncol=4, frameon=False)
+    handles, labels = ax1.get_legend_handles_labels()
+    fig.legend(handles, labels,
+           loc='upper center',
+           bbox_to_anchor=(0.5, 1.05),  # adjust vertical position
+           ncol=5,                      # number of columns in legend
+           frameon=False)
+
+    # Layout
+    plt.tight_layout()
+    # plt.subplots_adjust(right=0.78)
+    plt.savefig("reconstruction_downstream_performance.png", dpi=300, bbox_inches='tight')
+    
+
+    
+    
+    
+    
+    
 
 def load_sae_model(sae_path):
     sae_path = sae_path
@@ -1443,8 +1542,6 @@ def generate_original_outputs(model, processor, raw_image, text_prompt, max_toke
     output_texts = processor.decode(output[0][2:], skip_special_tokens=True)
     print(output_texts)
     
-
-
 
 
 
